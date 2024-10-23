@@ -1,0 +1,7 @@
+version = 1
+
+[[steps]]
+[steps.shell]
+script = '''
+sudo reboot
+'''
