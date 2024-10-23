@@ -1,0 +1,224 @@
+version = 1
+
+[env]
+REPO_OWNER = "idaholab"
+REPO_NAME = "Malcolm"
+REPO_BRANCH = "main"
+
+VERBOSE = "false"
+RUNTIME = "docker"
+MALCOLM_PROFILE = "malcolm"
+DARK_MODE = "true"
+HTTPS = "true"
+LDAP = "false"
+LDAP_MODE = "openldap"
+LDAP_START_TLS = "false"
+RESTART_MALCOLM = "true"
+REVERSE_PROXIED = "false"
+TRAEFIK_HOST = ""
+TRAEFIK_HOST_OPENSEARCH = ""
+TRAEFIK_ENTRYPOINT = ""
+TRAEFIK_RESOLVER = ""
+NETWORK_NAME = ""
+OPENSEARCH = "opensearch-local"
+OPENSEARCH_MEMORY = ""
+OPENSEARCH_URL = ""
+OPENSEARCH_SSL_VERIFY = "false"
+OPENSEARCH_COMPRESS_SNAPSHOTS = "false"
+OPENSEARCH_SECONDARY = ""
+OPENSEARCH_SECONDARY_URL = ""
+OPENSEARCH_SECONDARY_SSL_VERIFY = "false"
+DASHBOARDS_URL = ""
+LOGSTASH_HOST = ""
+LOGSTASH_MEMORY = ""
+LOGSTASH_WORKERS = ""
+LOGSTASH_EXPOSE = "false"
+OPENSEARCH_EXPOSE = "false"
+FILEBEAT_TCP_EXPOSE = "false"
+SFTP_EXPOSE = "false"
+PCAP_PATH = ""
+ZEEK_PATH = ""
+SURICATA_PATH = ""
+OPENSEARCH_PATH = ""
+OPENSEARCH_SNAPSHOT_PATH = ""
+DELETE_OLD_PCAP = "false"
+DELETE_PCAP_THRESHOLD = ""
+EXTRACTED_FILE_MAX_SIZE_THRESHOLD = ""
+EXTRACTED_FILE_TOTAL_DISK_USAGE_PERCENT_THRESHOLD = ""
+DELETE_INDEX_THRESHOLD = ""
+INDEX_MANAGEMENT_ENABLE = "false"
+INDEX_MANAGEMENT_HOT_WARM_ENABLE = ""
+INDEX_MANAGEMENT_OPTIMIZATION_TIME_PERIOD = ""
+INDEX_MANAGEMENT_SPI_DATA_RETENTION = ""
+INDEX_MANAGEMENT_REPLICAS = ""
+INDEX_MANAGEMENT_WEEKS_OF_HISTORY = ""
+INDEX_MANAGEMENT_SEGMENTS = ""
+AUTO_ARKIME = "true"
+AUTO_SURICATA = "true"
+SURICATA_RULE_UPDATE = "false"
+AUTO_ZEEK = "true"
+ZEEK_ICS = "true"
+ZEEK_ICS_BEST_GUESS = "true"
+REVERSE_DNS = "false"
+AUTO_OUI = "true"
+AUTO_FREQ = "true"
+FILE_EXTRACTION = "notcommtxt"
+FILE_PRESERVATION = "quarantined"
+EXTRACTED_FILE_SERVER = "true"
+EXTRACTED_FILE_SERVER_ZIP = "true"
+EXTRACTED_FILE_SERVER_PASSWORD = "infected"
+EXTRACTED_FILE_CLAMAV = "true"
+EXTRACTED_FILE_YARA = "true"
+EXTRACTED_FILE_CAPA = "true"
+VIRUSTOTAL_API_KEY = ""
+FILE_SCAN_RULE_UPDATE = "false"
+NETBOX = "true"
+NETBOX_ENRICH = "true"
+NETBOX_AUTOPOPULATE = "true"
+NETBOX_AUTO_PREFIXES = "true"
+NETBOX_SITE_NAME = ""
+LIVE_CAPTURE_IFACE = ""
+LIVE_CAPTURE_FILTER = ""
+LIVE_CAPTURE_IFACE_TWEAK = ""
+LIVE_CAPTURE_ARKIME = "false"
+LIVE_CAPTURE_ARKIME_NODE_HOST = ""
+LIVE_CAPTURE_NETSNIFF = "false"
+LIVE_CAPTURE_TCPDUMP = "false"
+LIVE_CAPTURE_ZEEK = "false"
+LIVE_CAPTURE_SURICATA = "false"
+NODE_NAME = "Malcolm"
+
+# username: analyst
+# password: M@lc0lm
+AUTH_USERNAME = '$1$owXoS5pf$YesZKhhWS0d3zVUUhdcef0'
+AUTH_PASSWORD = '$2y$05$a8jiJsLZ1mFnt5srJD3HAOKC8IUaZcOlsqp8txBlmMjW6wUXUtN3S'
+
+[[steps]]
+[steps.shell]
+script = '''
+echo "Setting up Malcolm..."
+
+pushd "$HOME"
+touch "$HOME"/.hushlogin
+mkdir -p "$HOME"/.local/bin "$HOME"/.config/procps "$HOME"/.config/systemd/user
+
+git clone --depth=1 --single-branch --recurse-submodules --shallow-submodules -b "$REPO_BRANCH" "https://github.com/$REPO_OWNER/$REPO_NAME"
+
+rm -f "$HOME"/.bashrc \
+      "$HOME"/.bash_aliases \
+      "$HOME"/.bash_functions \
+      "$HOME"/.config/procps/toprc \
+      "$HOME"/.selected_editor \
+      "$HOME"/.tmux.conf \
+      "$HOME"/.vimrc
+ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/bash.bash_aliases "$HOME"/.bash_aliases
+ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/bash.bash_functions "$HOME"/.bash_functions
+ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.bashrc "$HOME"/.bashrc
+ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.config/procps/toprc "$HOME"/.config/procps/toprc
+ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.selected_editor "$HOME"/.selected_editor
+ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.tmux.conf "$HOME"/.tmux.conf
+ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.vimrc "$HOME"/.vimrc
+ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.config/systemd/user/*.service "$HOME"/.config/systemd/user/
+
+pushd Malcolm
+python3 ./scripts/install.py --defaults \
+    --verbose "$VERBOSE" \
+    --runtime "$RUNTIME" \
+    --malcolm-profile "$MALCOLM_PROFILE" \
+    --dark-mode "$DARK_MODE" \
+    --https "$HTTPS" \
+    --ldap "$LDAP" \
+    --ldap-mode "$LDAP_MODE" \
+    --ldap-start-tls "$LDAP_START_TLS" \
+    --restart-malcolm "$RESTART_MALCOLM" \
+    --reverse-proxied "$REVERSE_PROXIED" \
+    --traefik-host "$TRAEFIK_HOST" \
+    --traefik-host-opensearch "$TRAEFIK_HOST_OPENSEARCH" \
+    --traefik-entrypoint "$TRAEFIK_ENTRYPOINT" \
+    --traefik-resolver "$TRAEFIK_RESOLVER" \
+    --network-name "$NETWORK_NAME" \
+    --opensearch "$OPENSEARCH" \
+    --opensearch-memory "$OPENSEARCH_MEMORY" \
+    --opensearch-url "$OPENSEARCH_URL" \
+    --opensearch-ssl-verify "$OPENSEARCH_SSL_VERIFY" \
+    --opensearch-compress-snapshots "$OPENSEARCH_COMPRESS_SNAPSHOTS" \
+    --opensearch-secondary "$OPENSEARCH_SECONDARY" \
+    --opensearch-secondary-url "$OPENSEARCH_SECONDARY_URL" \
+    --opensearch-secondary-ssl-verify "$OPENSEARCH_SECONDARY_SSL_VERIFY" \
+    --dashboards-url "$DASHBOARDS_URL" \
+    --logstash-host "$LOGSTASH_HOST" \
+    --logstash-memory "$LOGSTASH_MEMORY" \
+    --logstash-workers "$LOGSTASH_WORKERS" \
+    --logstash-expose "$LOGSTASH_EXPOSE" \
+    --opensearch-expose "$OPENSEARCH_EXPOSE" \
+    --filebeat-tcp-expose "$FILEBEAT_TCP_EXPOSE" \
+    --sftp-expose "$SFTP_EXPOSE" \
+    --pcap-path "$PCAP_PATH" \
+    --zeek-path "$ZEEK_PATH" \
+    --suricata-path "$SURICATA_PATH" \
+    --opensearch-path "$OPENSEARCH_PATH" \
+    --opensearch-snapshot-path "$OPENSEARCH_SNAPSHOT_PATH" \
+    --delete-old-pcap "$DELETE_OLD_PCAP" \
+    --delete-pcap-threshold "$DELETE_PCAP_THRESHOLD" \
+    --extracted-file-max-size-threshold "$EXTRACTED_FILE_MAX_SIZE_THRESHOLD" \
+    --extracted-file-total-disk-usage-percent-threshold "$EXTRACTED_FILE_TOTAL_DISK_USAGE_PERCENT_THRESHOLD" \
+    --delete-index-threshold "$DELETE_INDEX_THRESHOLD" \
+    --index-management-enable "$INDEX_MANAGEMENT_ENABLE" \
+    --index-management-hot-warm-enable "$INDEX_MANAGEMENT_HOT_WARM_ENABLE" \
+    --index-management-optimization-time-period "$INDEX_MANAGEMENT_OPTIMIZATION_TIME_PERIOD" \
+    --index-management-spi-data-retention "$INDEX_MANAGEMENT_SPI_DATA_RETENTION" \
+    --index-management-replicas "$INDEX_MANAGEMENT_REPLICAS" \
+    --index-management-weeks-of-history "$INDEX_MANAGEMENT_WEEKS_OF_HISTORY" \
+    --index-management-segments "$INDEX_MANAGEMENT_SEGMENTS" \
+    --auto-arkime "$AUTO_ARKIME" \
+    --auto-suricata "$AUTO_SURICATA" \
+    --suricata-rule-update "$SURICATA_RULE_UPDATE" \
+    --auto-zeek "$AUTO_ZEEK" \
+    --zeek-ics "$ZEEK_ICS" \
+    --zeek-ics-best-guess "$ZEEK_ICS_BEST_GUESS" \
+    --reverse-dns "$REVERSE_DNS" \
+    --auto-oui "$AUTO_OUI" \
+    --auto-freq "$AUTO_FREQ" \
+    --file-extraction "$FILE_EXTRACTION" \
+    --file-preservation "$FILE_PRESERVATION" \
+    --extracted-file-server "$EXTRACTED_FILE_SERVER" \
+    --extracted-file-server-zip "$EXTRACTED_FILE_SERVER_ZIP" \
+    --extracted-file-server-password "$EXTRACTED_FILE_SERVER_PASSWORD" \
+    --extracted-file-clamav "$EXTRACTED_FILE_CLAMAV" \
+    --extracted-file-yara "$EXTRACTED_FILE_YARA" \
+    --extracted-file-capa "$EXTRACTED_FILE_CAPA" \
+    --virustotal-api-key "$VIRUSTOTAL_API_KEY" \
+    --file-scan-rule-update "$FILE_SCAN_RULE_UPDATE" \
+    --netbox "$NETBOX" \
+    --netbox-enrich "$NETBOX_ENRICH" \
+    --netbox-autopopulate "$NETBOX_AUTOPOPULATE" \
+    --netbox-auto-prefixes "$NETBOX_AUTO_PREFIXES" \
+    --netbox-site-name "$NETBOX_SITE_NAME" \
+    --live-capture-iface "$LIVE_CAPTURE_IFACE" \
+    --live-capture-filter "$LIVE_CAPTURE_FILTER" \
+    --live-capture-iface-tweak "$LIVE_CAPTURE_IFACE_TWEAK" \
+    --live-capture-arkime "$LIVE_CAPTURE_ARKIME" \
+    --live-capture-arkime-node-host "$LIVE_CAPTURE_ARKIME_NODE_HOST" \
+    --live-capture-netsniff "$LIVE_CAPTURE_NETSNIFF" \
+    --live-capture-tcpdump "$LIVE_CAPTURE_TCPDUMP" \
+    --live-capture-zeek "$LIVE_CAPTURE_ZEEK" \
+    --live-capture-suricata "$LIVE_CAPTURE_SURICATA" \
+    --node-name "$NODE_NAME"
+
+python3 ./scripts/auth_setup \
+    --auth-noninteractive \
+    --auth-admin-username analyst \
+    --auth-admin-password-openssl "$AUTH_USERNAME" \
+    --auth-admin-password-htpasswd "$AUTH_PASSWORD" \
+    --auth-generate-webcerts \
+    --auth-generate-fwcerts \
+    --auth-generate-netbox-passwords
+
+popd
+
+popd
+
+sudo usermod -a -G docker "$USER"
+sudo loginctl enable-linger "$USER"
+sudo ln -s -r /usr/libexec/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+'''
