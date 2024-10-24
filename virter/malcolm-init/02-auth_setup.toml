@@ -1,6 +1,8 @@
 version = 1
 
 [env]
+VERBOSE = "false"
+
 # username: analyst
 # password: M@lc0lm
 AUTH_USERNAME = 'analyst'
@@ -16,6 +18,7 @@ echo "Setting up authentication..."
 
 pushd "$HOME"/Malcolm
 python3 ./scripts/auth_setup \
+    --verbose "$VERBOSE" \
     --auth-noninteractive \
     --auth-admin-username "$AUTH_USERNAME" \
     --auth-admin-password-openssl "$AUTH_PASSWORD_OPENSSL" \

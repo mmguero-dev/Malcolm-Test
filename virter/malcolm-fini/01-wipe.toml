@@ -1,0 +1,15 @@
+version = 1
+
+[env]
+VERBOSE = "false"
+
+[[steps]]
+[steps.shell]
+script = '''
+echo "Shutting down and wiping Malcolm..."
+
+pushd "$HOME"/Malcolm
+python3 ./scripts/wipe \
+    --verbose "$VERBOSE"
+popd
+'''
