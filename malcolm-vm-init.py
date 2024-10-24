@@ -359,7 +359,7 @@ def main():
         required=False,
         metavar='<integer>',
         type=int,
-        default=max(16, int(round(psutil.virtual_memory().total / (1024.0**3)))),
+        default=max(16, int(round(psutil.virtual_memory().total / (1024.0**3))) // 2),
         help='System memory (GB) for virtual Malcolm instance',
     )
     vmSpecsArgGroup.add_argument(
