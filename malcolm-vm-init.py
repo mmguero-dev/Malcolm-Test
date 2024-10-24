@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import errno
+import glob
 import json
 import logging
 import mmguero
@@ -13,7 +15,6 @@ import signal
 import sys
 
 from random import randrange
-from subprocess import PIPE, STDOUT, DEVNULL, Popen, TimeoutExpired
 
 ###################################################################################################
 script_name = os.path.basename(__file__)
@@ -67,7 +68,7 @@ def main():
         '-g',
         '--github-url',
         required=False,
-        dest='repoOwner',
+        dest='repoUrl',
         metavar='<string>',
         type=str,
         default=os.getenv('MALCOLM_REPO_URL', 'idaholab'),
@@ -150,7 +151,7 @@ def main():
         dest='vmNamePrefix',
         metavar='<string>',
         type=str,
-        default=os.getenv('QEMU_VM_NAME_PREFIX', 'malcolm'),
+        default=os.getenv('QEMU_NAME_PREFIX', 'malcolm'),
         help='Prefix for Malcolm VM name (e.g., malcolm)',
     )
     repoArgGroup.add_argument(
@@ -159,8 +160,27 @@ def main():
         dest='vmExistingName',
         metavar='<string>',
         type=str,
-        default=os.getenv('QEMU_VM_EXISTING', ''),
+        default=os.getenv('QEMU_EXISTING', ''),
         help='Name of an existing virter VM to use rather than starting up a new one',
+    )
+    repoArgGroup.add_argument(
+        '--vm-provision',
+        dest='vmProvision',
+        type=mmguero.str2bool,
+        nargs='?',
+        metavar="true|false",
+        const=True,
+        default=True,
+        help=f'Perform VM provisioning',
+    )
+    repoArgGroup.add_argument(
+        '--vm-provision-path',
+        required=False,
+        dest='vmProvisionPath',
+        metavar='<string>',
+        type=str,
+        default=os.getenv('QEMU_PROVISION_PATH', os.path.join(script_path, 'virter')),
+        help=f'Path containing subdirectories with TOML files for VM provisioning (e.g., {os.path.join(script_path, "virter")})',
     )
 
     # configArgGroup = parser.add_argument_group('Malcolm runtime configuration')
@@ -180,8 +200,11 @@ def main():
     logging.info(os.path.join(script_path, script_name))
     logging.info("Arguments: {}".format(sys.argv[1:]))
     logging.info("Arguments: {}".format(args))
+    if extraArgs:
+        logging.info("Extra arguments: {}".format(extraArgs))
     if args.verbose > logging.DEBUG:
         sys.tracebacklimit = 0
+
     osEnv = os.environ.copy()
     osEnv.pop('SSH_AUTH_SOCK', None)
 
@@ -199,87 +222,104 @@ def main():
     signal.signal(signal.SIGINT, shutdown_handler)
     signal.signal(signal.SIGTERM, shutdown_handler)
 
-    if args.vmExistingName:
-        # use an existing VM (by name)
-        vmId = None
-        vmName = args.vmExistingName
-        exitCode, output = mmguero.RunProcess(
-            ['virter', 'vm', 'exists', vmName],
-            env=osEnv,
-            debug=(args.verbose > logging.DEBUG),
-            logger=logging,
-        )
-        logging.info(f'{vmName} exists: {bool(exitCode == 0)}')
+    try:
 
-    else:
-        # use virter to execute a virtual machine
-        vmId = 120 + randrange(80)
-        vmName = f"{args.vmNamePrefix}-{vmId}"
-        cmd = [
-            'virter',
-            'vm',
-            'run',
-            args.vmImage,
-            '--id',
-            vmId,
-            '--name',
-            vmName,
-            '--vcpus',
-            args.vmCpuCount,
-            '--memory',
-            f'{args.vmMemoryGigabytes}GB',
-            '--bootcapacity',
-            f'{args.vmDiskGigabytes}GB',
-            '--user',
-            args.vmImageUsername,
-            '--wait-ssh',
-        ]
-        if extraArgs:
-            cmd.extend(extraArgs)
+        if args.vmExistingName:
+            # use an existing VM (by name)
+            vmId = None
+            vmName = args.vmExistingName
+            exitCode, output = mmguero.RunProcess(
+                ['virter', 'vm', 'exists', vmName],
+                env=osEnv,
+                debug=(args.verbose > logging.DEBUG),
+                logger=logging,
+            )
+            logging.info(f'{vmName} exists: {bool(exitCode == 0)}')
 
-        cmd = [str(x) for x in list(mmguero.Flatten(cmd))]
-        logging.info(cmd)
-        process = Popen(
-            cmd,
-            env=osEnv,
-            text=True,
-            bufsize=1,
-            stdout=PIPE,
-            stderr=PIPE,
-        )
-        while not shuttingDown[0]:
-            output = process.stdout.readline()
-            errput = process.stderr.readline() if process.stderr else None
-            if not output and not errput:
-                if process.poll() is not None:
-                    break
+        else:
+            # use virter to execute a virtual machine
+            vmId = 120 + randrange(80)
+            vmName = f"{args.vmNamePrefix}-{vmId}"
+            cmd = [
+                'virter',
+                'vm',
+                'run',
+                args.vmImage,
+                '--id',
+                vmId,
+                '--name',
+                vmName,
+                '--vcpus',
+                args.vmCpuCount,
+                '--memory',
+                f'{args.vmMemoryGigabytes}GB',
+                '--bootcapacity',
+                f'{args.vmDiskGigabytes}GB',
+                '--user',
+                args.vmImageUsername,
+                '--wait-ssh',
+            ]
+            if extraArgs:
+                cmd.extend(extraArgs)
+
+            cmd = [str(x) for x in list(mmguero.Flatten(cmd))]
+            logging.info(cmd)
+            exitCode, output = mmguero.RunProcess(
+                cmd,
+                env=osEnv,
+                debug=(args.verbose > logging.DEBUG),
+                logger=logging,
+            )
+            for x in mmguero.GetIterable(output):
+                if x:
+                    logging.info(x)
+
+        if exitCode == 0:
+            # at this point the VM should exist, perform VM provisioning
+            if args.vmProvision:
+                vmTomlPath = os.path.join(args.vmProvisionPath, args.vmImage)
+                if os.path.exists(vmTomlPath):
+                    for provisionFile in sorted(glob.glob(os.path.join(vmTomlPath, '*.toml'))):
+                        provisionCmd = [
+                            'virter',
+                            'vm',
+                            'exec',
+                            vmName,
+                            '--set',
+                            f"env.MALCOLM_REPO_URL={args.repoUrl}",
+                            '--set',
+                            f"env.MALCOLM_REPO_BRANCH={args.repoBranch}",
+                            '--provision',
+                            provisionFile,
+                        ]
+                        logging.debug(provisionCmd)
+                        tmpExitCode, output = mmguero.RunProcess(
+                            provisionCmd,
+                            env=osEnv,
+                            debug=(args.verbose > logging.DEBUG),
+                            logger=logging,
+                        )
+                        for x in mmguero.GetIterable(output):
+                            if x:
+                                logging.info(x)
+
+                        if tmpExitCode != 0:
+                            logging.warning(f'Provisioning {vmName} with {provisionFile} return error {tmpExitCode}')
                 else:
-                    time.sleep(0.5)
-            else:
-                if output:
-                    logging.info(output)
-                if errput:
-                    logging.debug(errput)
-        if shuttingDown[0]:
-            process.terminate()
-            try:
-                process.wait(timeout=15.0)
-            except TimeoutExpired:
-                process.kill()
-        exitCode = process.returncode
+                    raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), vmTomlPath)
 
-    if exitCode == 0:
-        # at this point the VM should exist
-        pass
-
-    if args.removeAfterExec:
-        tmpExitCode, output = mmguero.RunProcess(
-            ['virter', 'vm', 'rm', vmName],
-            env=osEnv,
-            debug=(args.verbose > logging.DEBUG),
-            logger=logging,
-        )
-        logging.info(f'{tmpExitCode} shutting down {vmName}: {output}')
+    finally:
+        # if requested, make sure to shut down the VM
+        if args.removeAfterExec:
+            tmpExitCode, output = mmguero.RunProcess(
+                ['virter', 'vm', 'rm', vmName],
+                env=osEnv,
+                debug=(args.verbose > logging.DEBUG),
+                logger=logging,
+            )
+            for x in mmguero.GetIterable(output):
+                if x:
+                    logging.info(x)
 
     logging.debug(f'{script_name} returning {exitCode}')
     return exitCode

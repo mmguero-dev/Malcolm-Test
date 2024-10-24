@@ -1,8 +1,7 @@
 version = 1
 
 [env]
-REPO_OWNER = "idaholab"
-REPO_NAME = "Malcolm"
+REPO_URL = "https://github.com/idaholab/Malcolm"
 REPO_BRANCH = "main"
 
 VERBOSE = "false"
@@ -102,7 +101,7 @@ pushd "$HOME"
 touch "$HOME"/.hushlogin
 mkdir -p "$HOME"/.local/bin "$HOME"/.config/procps "$HOME"/.config/systemd/user
 
-git clone --depth=1 --single-branch --recurse-submodules --shallow-submodules -b "$REPO_BRANCH" "https://github.com/$REPO_OWNER/$REPO_NAME"
+git clone --depth=1 --single-branch --recurse-submodules --shallow-submodules -b "$REPO_BRANCH" "$REPO_URL"
 
 rm -f "$HOME"/.bashrc \
       "$HOME"/.bash_aliases \
