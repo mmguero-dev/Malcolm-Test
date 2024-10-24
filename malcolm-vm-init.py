@@ -15,6 +15,7 @@ import signal
 import sys
 
 from random import randrange
+from collections import defaultdict
 
 ###################################################################################################
 script_name = os.path.basename(__file__)
@@ -27,6 +28,21 @@ shuttingDown = [False]
 def shutdown_handler(signum, frame):
     global shuttingDown
     shuttingDown[0] = True
+
+
+###################################################################################################
+# parse_virter_log_line
+def parse_virter_log_line(log_line):
+    pattern = r'(\w+)=(".*?"|\S+)'
+    matches = re.findall(pattern, log_line)
+    log_dict = defaultdict(lambda: log_line)
+    if matches:
+        for key, value in matches:
+            if value.startswith('"') and value.endswith('"'):
+                value = value[1:-1].replace('\\"', '"')
+            log_dict[key] = value
+
+    return log_dict
 
 
 ###################################################################################################
@@ -188,7 +204,8 @@ def main():
     try:
         parser.error = parser.exit
         args, extraArgs = parser.parse_known_args()
-    except SystemExit:
+    except SystemExit as e:
+        mmguero.eprint(f'Invalid argument(s): {e}')
         parser.print_help()
         sys.exit(2)
 
@@ -272,7 +289,7 @@ def main():
             )
             for x in mmguero.GetIterable(output):
                 if x:
-                    logging.info(x)
+                    logging.info(parse_virter_log_line(x)['msg'])
 
         if exitCode == 0:
             # at this point the VM should exist, perform VM provisioning
@@ -286,13 +303,15 @@ def main():
                             'exec',
                             vmName,
                             '--set',
-                            f"env.MALCOLM_REPO_URL={args.repoUrl}",
+                            f"env.REPO_URL={args.repoUrl}",
                             '--set',
-                            f"env.MALCOLM_REPO_BRANCH={args.repoBranch}",
+                            f"env.REPO_BRANCH={args.repoBranch}",
+                            '--set',
+                            f"env.VERBOSE={str(bool(args.verbose > logging.DEBUG)).lower()}",
                             '--provision',
                             provisionFile,
                         ]
-                        logging.debug(provisionCmd)
+                        logging.info(provisionCmd)
                         tmpExitCode, output = mmguero.RunProcess(
                             provisionCmd,
                             env=osEnv,
@@ -301,7 +320,7 @@ def main():
                         )
                         for x in mmguero.GetIterable(output):
                             if x:
-                                logging.info(x)
+                                logging.info(parse_virter_log_line(x)['msg'])
 
                         if tmpExitCode != 0:
                             logging.warning(f'Provisioning {vmName} with {provisionFile} return error {tmpExitCode}')
@@ -319,9 +338,9 @@ def main():
             )
             for x in mmguero.GetIterable(output):
                 if x:
-                    logging.info(x)
+                    logging.info(parse_virter_log_line(x)['msg'])
 
-    logging.debug(f'{script_name} returning {exitCode}')
+    logging.info(f'{script_name} returning {exitCode}')
     return exitCode
 
 
