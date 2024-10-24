@@ -176,6 +176,7 @@ class MalcolmVM(object):
         else:
             raise subprocess.CalledProcessError(exitCode, cmd, output=output)
 
+        self.logger.info('Malcolm is started and ready to process data')
         return exitCode
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
