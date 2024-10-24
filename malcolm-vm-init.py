@@ -15,6 +15,7 @@ import re
 import signal
 import subprocess
 import sys
+import time
 import toml
 
 from random import randrange
@@ -24,7 +25,6 @@ from collections import defaultdict
 script_name = os.path.basename(__file__)
 script_path = os.path.dirname(os.path.realpath(__file__))
 shuttingDown = [False]
-args = None
 
 
 ###################################################################################################
@@ -113,19 +113,30 @@ class MalcolmVM(object):
                 self.logger.info(parse_virter_log_line(x)['msg'])
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    def Exists(self):
+        exitCode, output = mmguero.RunProcess(
+            ['virter', 'vm', 'exists', self.name],
+            env=self.osEnv,
+            debug=self.debug,
+            logger=self.logger,
+        )
+        return bool(exitCode == 0)
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def Start(self):
+        global shuttingDown
+
         if self.vmExistingName:
             # use an existing VM (by name)
             self.name = self.vmExistingName
-            exitCode, output = mmguero.RunProcess(
-                ['virter', 'vm', 'exists', self.name],
-                env=self.osEnv,
-                debug=self.debug,
-                logger=self.logger,
-            )
-            self.logger.info(f'{self.name} exists: {bool(exitCode == 0)}')
+            if self.Exists():
+                self.logger.info(f'{self.name} exists as indicated')
+                exitCode = 0
+            else:
+                self.logger.info(f'{self.name} does not already exist')
+                exitCode = 1
 
-        else:
+        elif shuttingDown[0] == False:
             # use virter to execute a virtual machine
             self.id = 120 + randrange(80)
             self.name = f"{self.vmNamePrefix}-{self.id}"
@@ -158,6 +169,9 @@ class MalcolmVM(object):
                 logger=self.logger,
             )
 
+        else:
+            exitCode = 1
+
         if exitCode == 0:
             self.PrintVirterLogOutput(output)
             self.ProvisionInit()
@@ -167,28 +181,34 @@ class MalcolmVM(object):
         return exitCode
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    def ProvisionFile(self, provisionFile, tolerateFailure=False):
-        cmd = [
-            'virter',
-            'vm',
-            'exec',
-            self.name,
-            '--provision',
-            provisionFile,
-        ]
-        if self.provisionEnvArgs:
-            cmd.extend(self.provisionEnvArgs)
-        self.logger.info(cmd)
-        code, out = mmguero.RunProcess(
-            cmd,
-            env=self.osEnv,
-            debug=self.debug,
-            logger=self.logger,
-        )
-        if (code == 0) or (tolerateFailure == True):
-            self.PrintVirterLogOutput(out)
+    def ProvisionFile(self, provisionFile, continueThroughShutdown=False, tolerateFailure=False):
+        global shuttingDown
+
+        if (shuttingDown[0] == False) or (continueThroughShutdown == True):
+            cmd = [
+                'virter',
+                'vm',
+                'exec',
+                self.name,
+                '--provision',
+                provisionFile,
+            ]
+            if self.provisionEnvArgs:
+                cmd.extend(self.provisionEnvArgs)
+            self.logger.info(cmd)
+            code, out = mmguero.RunProcess(
+                cmd,
+                env=self.osEnv,
+                debug=self.debug,
+                logger=self.logger,
+            )
+            if (code == 0) or (tolerateFailure == True):
+                self.PrintVirterLogOutput(out)
+            else:
+                raise subprocess.CalledProcessError(code, cmd, output=out)
+
         else:
-            raise subprocess.CalledProcessError(code, cmd, output=out)
+            code = 1
 
         return code
 
@@ -241,20 +261,37 @@ class MalcolmVM(object):
             # now execute provisioning from the "malcolm fini" directory
             if os.path.isdir(self.vmTomlMalcolmFiniPath):
                 for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmFiniPath, '*.toml'))):
-                    self.ProvisionFile(provisionFile)
+                    self.ProvisionFile(provisionFile, continueThroughShutdown=True)
 
             # finally, execute any provisioning in this image's "fini" directory, if it exists
             if os.path.isdir(self.vmTomlVMFiniPath):
                 for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlVMFiniPath, '*.toml'))):
-                    self.ProvisionFile(provisionFile)
+                    self.ProvisionFile(provisionFile, continueThroughShutdown=True)
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    def WaitForShutdown(self):
+        global shuttingDown
+
+        sleepCtr = 0
+        noExistCtr = 0
+        while shuttingDown[0] == False:
+            time.sleep(1)
+            sleepCtr = sleepCtr + 1
+            if sleepCtr > 60:
+                sleepCtr = 0
+                if self.Exists():
+                    noExistCtr = 0
+                else:
+                    noExistCtr = noExistCtr + 1
+                    self.logger.warning(f'Failed to ascertain existence of {self.name} (x {noExistCtr})')
+                    if noExistCtr >= 5:
+                        self.logger.error(f'{self.name} no longer exists, giving up')
+                        shuttingDown[0] = True
 
 
 ###################################################################################################
 # main
 def main():
-    global args
-    global shuttingDown
-
     parser = argparse.ArgumentParser(
         description='\n'.join(
             [
@@ -428,10 +465,14 @@ def main():
     signal.signal(signal.SIGINT, shutdown_handler)
     signal.signal(signal.SIGTERM, shutdown_handler)
 
-    malcolmVm = MalcolmVM(args=args, debug=(args.verbose > logging.DEBUG), logger=logging)
-
+    malcolmVm = MalcolmVM(
+        args=args,
+        debug=(args.verbose > logging.DEBUG),
+        logger=logging,
+    )
     try:
         exitCode = malcolmVm.Start()
+        malcolmVm.WaitForShutdown()
     finally:
         del malcolmVm
 
