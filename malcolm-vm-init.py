@@ -212,6 +212,8 @@ class MalcolmVM(object):
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionInit(self):
+        global shuttingDown
+
         if self.vmProvision and os.path.isdir(self.vmProvisionPath):
 
             # first execute any provisioning in this image's "init" directory, if it exists
@@ -251,6 +253,38 @@ class MalcolmVM(object):
             if os.path.isdir(self.vmTomlMalcolmInitPath):
                 for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmInitPath, '*.toml'))):
                     self.ProvisionFile(provisionFile)
+
+            # sleep a bit, if indicated
+            sleepCtr = 0
+            while (shuttingDown[0] == False) and (sleepCtr < self.postInitSleep):
+                sleepCtr = sleepCtr + 1
+                time.sleep(1)
+
+            # finally, start Malcolm
+            if self.startMalcolm and (shuttingDown[0] == False):
+                with mmguero.TemporaryFilename(suffix='.toml') as tomlFileName:
+                    with open(tomlFileName, 'w') as tomlFile:
+                        tomlFile.write(
+                            toml.dumps(
+                                {
+                                    'version': 1,
+                                    'steps': [
+                                        {
+                                            'shell': {
+                                                'script': '''
+                                                    ~/Malcolm/scripts/start &>/dev/null &
+                                                    START_PID=$!
+                                                    sleep 30
+                                                    kill $START_PID
+                                                    sleep 10
+                                                '''
+                                            }
+                                        }
+                                    ],
+                                }
+                            )
+                        )
+                    self.ProvisionFile(tomlFileName)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionFini(self):
@@ -377,7 +411,7 @@ def main():
         default=64,
         help='Disk size (GB) for virtual Malcolm instance',
     )
-    repoArgGroup.add_argument(
+    vmSpecsArgGroup.add_argument(
         '-i',
         '--image',
         required=False,
@@ -387,7 +421,7 @@ def main():
         default=os.getenv('QEMU_IMAGE', 'debian-12'),
         help='Malcolm virtual instance base image name (e.g., debian-12)',
     )
-    repoArgGroup.add_argument(
+    vmSpecsArgGroup.add_argument(
         '--image-user',
         required=False,
         dest='vmImageUsername',
@@ -396,7 +430,7 @@ def main():
         default=os.getenv('QEMU_USER', 'debian'),
         help='Malcolm virtual instance base image username (e.g., debian)',
     )
-    repoArgGroup.add_argument(
+    vmSpecsArgGroup.add_argument(
         '--vm-name-prefix',
         required=False,
         dest='vmNamePrefix',
@@ -405,7 +439,7 @@ def main():
         default=os.getenv('QEMU_NAME_PREFIX', 'malcolm'),
         help='Prefix for Malcolm VM name (e.g., malcolm)',
     )
-    repoArgGroup.add_argument(
+    vmSpecsArgGroup.add_argument(
         '--existing-vm',
         required=False,
         dest='vmExistingName',
@@ -414,7 +448,7 @@ def main():
         default=os.getenv('QEMU_EXISTING', ''),
         help='Name of an existing virter VM to use rather than starting up a new one',
     )
-    repoArgGroup.add_argument(
+    vmSpecsArgGroup.add_argument(
         '--vm-provision',
         dest='vmProvision',
         type=mmguero.str2bool,
@@ -424,7 +458,7 @@ def main():
         default=True,
         help=f'Perform VM provisioning',
     )
-    repoArgGroup.add_argument(
+    vmSpecsArgGroup.add_argument(
         '--vm-provision-path',
         required=False,
         dest='vmProvisionPath',
@@ -443,6 +477,26 @@ def main():
         type=str,
         default='',
         help='Malcolm container images .tar.xz file for installation (instead of "docker load")',
+    )
+    configArgGroup.add_argument(
+        '-s',
+        '--start',
+        dest='startMalcolm',
+        type=mmguero.str2bool,
+        nargs='?',
+        metavar="true|false",
+        const=True,
+        default=True,
+        help=f'Start Malcolm once provisioning is complete (default true)',
+    )
+    configArgGroup.add_argument(
+        '--sleep',
+        dest='postInitSleep',
+        required=False,
+        metavar='<integer>',
+        type=int,
+        default=30,
+        help='Seconds to sleep after init before starting Malcolm (default 30)',
     )
 
     try:
