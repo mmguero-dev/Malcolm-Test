@@ -260,7 +260,7 @@ class MalcolmVM(object):
                 sleepCtr = sleepCtr + 1
                 time.sleep(1)
 
-            # finally, start Malcolm
+            # finally, start Malcolm and wait for it to become ready to process data
             if self.startMalcolm and (shuttingDown[0] == False):
                 with mmguero.TemporaryFilename(suffix='.toml') as tomlFileName:
                     with open(tomlFileName, 'w') as tomlFile:
@@ -272,11 +272,15 @@ class MalcolmVM(object):
                                         {
                                             'shell': {
                                                 'script': '''
+                                                    pushd ~/Malcolm &>/dev/null
                                                     ~/Malcolm/scripts/start &>/dev/null &
                                                     START_PID=$!
                                                     sleep 30
                                                     kill $START_PID
                                                     sleep 10
+                                                    while [[ $(( docker compose exec api curl -sSL localhost:5000/mapi/ready 2>/dev/null | jq 'if (.arkime and .logstash_lumberjack and .logstash_pipelines and .opensearch and .pcap_monitor) then 1 else 0 end' 2>/dev/null ) || echo 0) != '1' ]]; do echo 'Waiting for Malcolm to become ready...' ; sleep 10; done
+                                                    echo 'Malcolm is ready!'
+                                                    popd &>/dev/null
                                                 '''
                                             }
                                         }
