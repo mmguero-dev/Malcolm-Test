@@ -270,8 +270,10 @@ class MalcolmVM(object):
     def WaitForShutdown(self):
         global shuttingDown
 
+        returnCode = 0
         sleepCtr = 0
         noExistCtr = 0
+
         while shuttingDown[0] == False:
             time.sleep(1)
             sleepCtr = sleepCtr + 1
@@ -285,6 +287,9 @@ class MalcolmVM(object):
                     if noExistCtr >= 5:
                         self.logger.error(f'{self.name} no longer exists, giving up')
                         shuttingDown[0] = True
+                        returnCode = 1
+
+        return returnCode
 
 
 ###################################################################################################
