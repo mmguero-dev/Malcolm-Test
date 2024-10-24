@@ -92,15 +92,17 @@ class MalcolmVM(object):
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def __del__(self):
         # if requested, make sure to shut down the VM
-        self.ProvisionFini()
-        if self.args.removeAfterExec:
-            tmpExitCode, output = mmguero.RunProcess(
-                ['virter', 'vm', 'rm', self.name],
-                env=self.osEnv,
-                debug=self.debug,
-                logger=self.logger,
-            )
-            self.PrintVirterLogOutput(output)
+        try:
+            self.ProvisionFini()
+        finally:
+            if self.args.removeAfterExec:
+                tmpExitCode, output = mmguero.RunProcess(
+                    ['virter', 'vm', 'rm', self.name],
+                    env=self.osEnv,
+                    debug=self.debug,
+                    logger=self.logger,
+                )
+                self.PrintVirterLogOutput(output)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def PrintVirterLogOutput(self, output):
@@ -227,7 +229,7 @@ class MalcolmVM(object):
 
             # now execute provisioning from the "malcolm init" directory
             if os.path.isdir(self.vmTomlMalcolmInitPath):
-                for provisionFile in sorted(glob.glob(os.path.join(vmTomlMalcolmInitPath, '*.toml'))):
+                for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmInitPath, '*.toml'))):
                     self.ProvisionFile(provisionFile)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
