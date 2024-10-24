@@ -1,0 +1,27 @@
+version = 1
+
+[env]
+# username: analyst
+# password: M@lc0lm
+AUTH_USERNAME = 'analyst'
+# openssl -passwd -1
+AUTH_PASSWORD_OPENSSL = '$1$owXoS5pf$YesZKhhWS0d3zVUUhdcef0'
+# htpasswd -n -B username | cut -d: -f2
+AUTH_PASSWORD_HTPASSWD = '$2y$05$a8jiJsLZ1mFnt5srJD3HAOKC8IUaZcOlsqp8txBlmMjW6wUXUtN3S'
+
+[[steps]]
+[steps.shell]
+script = '''
+echo "Setting up authentication..."
+
+pushd "$HOME"/Malcolm
+python3 ./scripts/auth_setup \
+    --auth-noninteractive \
+    --auth-admin-username "$AUTH_USERNAME" \
+    --auth-admin-password-openssl "$AUTH_PASSWORD_OPENSSL" \
+    --auth-admin-password-htpasswd "$AUTH_PASSWORD_HTPASSWD" \
+    --auth-generate-webcerts \
+    --auth-generate-fwcerts \
+    --auth-generate-netbox-passwords
+popd
+'''

@@ -12,7 +12,9 @@ import os
 import psutil
 import re
 import signal
+import subprocess
 import sys
+import toml
 
 from random import randrange
 from collections import defaultdict
@@ -21,6 +23,7 @@ from collections import defaultdict
 script_name = os.path.basename(__file__)
 script_path = os.path.dirname(os.path.realpath(__file__))
 shuttingDown = [False]
+args = None
 
 
 ###################################################################################################
@@ -31,7 +34,6 @@ def shutdown_handler(signum, frame):
 
 
 ###################################################################################################
-# parse_virter_log_line
 def parse_virter_log_line(log_line):
     pattern = r'(\w+)=(".*?"|\S+)'
     matches = re.findall(pattern, log_line)
@@ -46,8 +48,45 @@ def parse_virter_log_line(log_line):
 
 
 ###################################################################################################
+def print_virter_log_output(output):
+    for x in mmguero.GetIterable(output):
+        if x:
+            logging.info(parse_virter_log_line(x)['msg'])
+
+
+###################################################################################################
+def virter_provision(vm_name, provision_file, extra_args, env=None, allow_failure=False):
+    global args
+
+    cmd = [
+        'virter',
+        'vm',
+        'exec',
+        vm_name,
+        '--provision',
+        provision_file,
+    ]
+    if extra_args:
+        cmd.extend(mmguero.GetIterable(extra_args))
+    logging.info(cmd)
+    code, out = mmguero.RunProcess(
+        cmd,
+        env=env,
+        debug=(args.verbose > logging.DEBUG),
+        logger=logging,
+    )
+    if (code == 0) or (allow_failure == True):
+        print_virter_log_output(out)
+    else:
+        raise subprocess.CalledProcessError(code, cmd, output=out)
+
+    return code
+
+
+###################################################################################################
 # main
 def main():
+    global args
     global shuttingDown
 
     parser = argparse.ArgumentParser(
@@ -99,16 +138,6 @@ def main():
         type=str,
         default=os.getenv('MALCOLM_REPO_BRANCH', 'main'),
         help='Malcolm repository branch (e.g., main)',
-    )
-    repoArgGroup.add_argument(
-        '-t',
-        '--github-token',
-        required=False,
-        dest='githubToken',
-        metavar='<string>',
-        type=str,
-        default=os.getenv('GITHUB_TOKEN', os.getenv('GITHUB_OAUTH_TOKEN', '')),
-        help='GitHub personal access token',
     )
 
     vmSpecsArgGroup = parser.add_argument_group('Virtual machine specifications')
@@ -199,7 +228,16 @@ def main():
         help=f'Path containing subdirectories with TOML files for VM provisioning (e.g., {os.path.join(script_path, "virter")})',
     )
 
-    # configArgGroup = parser.add_argument_group('Malcolm runtime configuration')
+    configArgGroup = parser.add_argument_group('Malcolm runtime configuration')
+    configArgGroup.add_argument(
+        '--container-image-file',
+        required=False,
+        dest='containerImageFile',
+        metavar='<string>',
+        type=str,
+        default='',
+        help='Malcolm container images .tar.xz file for installation (instead of "docker load")',
+    )
 
     try:
         parser.error = parser.exit
@@ -287,43 +325,93 @@ def main():
                 debug=(args.verbose > logging.DEBUG),
                 logger=logging,
             )
-            for x in mmguero.GetIterable(output):
-                if x:
-                    logging.info(parse_virter_log_line(x)['msg'])
 
-        if exitCode == 0:
+        if exitCode != 0:
+            raise subprocess.CalledProcessError(exitCode, cmd, output=output)
+
+        else:
+            print_virter_log_output(output)
+
             # at this point the VM should exist, perform VM provisioning
             if args.vmProvision:
-                vmTomlPath = os.path.join(args.vmProvisionPath, args.vmImage)
-                if os.path.exists(vmTomlPath):
-                    for provisionFile in sorted(glob.glob(os.path.join(vmTomlPath, '*.toml'))):
-                        provisionCmd = [
-                            'virter',
-                            'vm',
-                            'exec',
-                            vmName,
-                            '--set',
-                            f"env.REPO_URL={args.repoUrl}",
-                            '--set',
-                            f"env.REPO_BRANCH={args.repoBranch}",
-                            '--set',
-                            f"env.VERBOSE={str(bool(args.verbose > logging.DEBUG)).lower()}",
-                            '--provision',
-                            provisionFile,
-                        ]
-                        logging.info(provisionCmd)
-                        tmpExitCode, output = mmguero.RunProcess(
-                            provisionCmd,
-                            env=osEnv,
-                            debug=(args.verbose > logging.DEBUG),
-                            logger=logging,
-                        )
-                        for x in mmguero.GetIterable(output):
-                            if x:
-                                logging.info(parse_virter_log_line(x)['msg'])
+                provisionEnvArgs = [
+                    '--set',
+                    f"env.VERBOSE={str(bool(args.verbose > logging.DEBUG)).lower()}",
+                    '--set',
+                    f"env.REPO_URL={args.repoUrl}",
+                    '--set',
+                    f"env.REPO_BRANCH={args.repoBranch}",
+                ]
 
-                        if tmpExitCode != 0:
-                            logging.warning(f'Provisioning {vmName} with {provisionFile} return error {tmpExitCode}')
+                # execute provisioning steps
+                if os.path.isdir(args.vmProvisionPath):
+                    vmTomlPath = os.path.join(args.vmProvisionPath, 'malcolm')
+                    vmTomlInitPath = os.path.join(args.vmProvisionPath, os.path.join(args.vmImage, 'init'))
+                    vmTomlFiniPath = os.path.join(args.vmProvisionPath, os.path.join(args.vmImage, 'fini'))
+
+                    # first execute any provisioning in this image's "init" directory, if it exists
+                    #   (this needs to install rsync if it's not already part of the image)
+                    if os.path.isdir(vmTomlInitPath):
+                        for provisionFile in sorted(glob.glob(os.path.join(vmTomlInitPath, '*.toml'))):
+                            virter_provision(
+                                vm_name=vmName,
+                                provision_file=provisionFile,
+                                extra_args=provisionEnvArgs,
+                                env=osEnv,
+                            )
+
+                    # now, rsync the container image file to the VM if specified
+                    if args.containerImageFile:
+                        with mmguero.TemporaryFilename(suffix='.toml') as tomlFileName:
+                            with open(tomlFileName, 'w') as tomlFile:
+                                tomlFile.write(
+                                    toml.dumps(
+                                        {
+                                            'version': 1,
+                                            'steps': [
+                                                {
+                                                    'rsync': {
+                                                        'source': args.containerImageFile,
+                                                        'dest': "/tmp/malcolm_images.tar.xz",
+                                                    }
+                                                }
+                                            ],
+                                        }
+                                    )
+                                )
+                            virter_provision(
+                                vm_name=vmName,
+                                provision_file=tomlFileName,
+                                extra_args=provisionEnvArgs,
+                                env=osEnv,
+                            )
+                            provisionEnvArgs.extend(
+                                [
+                                    '--set',
+                                    f"env.IMAGE_FILE=/tmp/malcolm_images.tar.xz",
+                                ]
+                            )
+
+                    # now execute provisioning from the main "malcolm" directory
+                    if os.path.isdir(vmTomlPath):
+                        for provisionFile in sorted(glob.glob(os.path.join(vmTomlPath, '*.toml'))):
+                            virter_provision(
+                                vm_name=vmName,
+                                provision_file=provisionFile,
+                                extra_args=provisionEnvArgs,
+                                env=osEnv,
+                            )
+
+                    # finally, execute any provisioning in this image's "fini" directory, if it exists
+                    if os.path.isdir(vmTomlFiniPath):
+                        for provisionFile in sorted(glob.glob(os.path.join(vmTomlFiniPath, '*.toml'))):
+                            virter_provision(
+                                vm_name=vmName,
+                                provision_file=provisionFile,
+                                extra_args=provisionEnvArgs,
+                                env=osEnv,
+                            )
+
                 else:
                     raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), vmTomlPath)
 
@@ -336,9 +424,7 @@ def main():
                 debug=(args.verbose > logging.DEBUG),
                 logger=logging,
             )
-            for x in mmguero.GetIterable(output):
-                if x:
-                    logging.info(parse_virter_log_line(x)['msg'])
+            print_virter_log_output(output)
 
     logging.info(f'{script_name} returning {exitCode}')
     return exitCode

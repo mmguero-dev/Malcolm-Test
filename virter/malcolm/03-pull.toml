@@ -1,0 +1,22 @@
+version = 1
+
+[env]
+IMAGE_FILE = ""
+RUNTIME = "docker"
+
+[[steps]]
+[steps.shell]
+script = '''
+
+pushd "$HOME"/Malcolm
+if [[ -f "$IMAGE_FILE" ]]; then
+    echo "Loading Malcolm container images..."
+    unxz < "$IMAGE_FILE" | "$RUNTIME" load
+    rm -f "$IMAGE_FILE"
+else
+    echo "Pulling Malcolm container images..."
+    ./scripts/github_image_helper.sh "$(./scripts/github_image_helper.sh 99999 2>&1 | grep PullAndTagGithubWorkflowImages | awk '{print $1}')"
+fi
+popd
+"$RUNTIME" images
+'''

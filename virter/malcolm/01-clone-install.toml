@@ -7,6 +7,7 @@ REPO_BRANCH = "main"
 VERBOSE = "false"
 CONFIGURE_ONLY = "false"
 RUNTIME = "docker"
+IMAGE_FILE = ""
 MALCOLM_PROFILE = "true"
 DARK_MODE = "true"
 HTTPS = "true"
@@ -124,6 +125,7 @@ pushd Malcolm
 python3 ./scripts/install.py --defaults \
     --verbose "$VERBOSE" \
     --configure "$CONFIGURE_ONLY" \
+    --image-file "$IMAGE_FILE" \
     --runtime "$RUNTIME" \
     --malcolm-profile "$MALCOLM_PROFILE" \
     --dark-mode "$DARK_MODE" \
