@@ -126,6 +126,8 @@ class MalcolmVM(object):
     def Start(self):
         global shuttingDown
 
+        output = []
+        exitCode = 1
         if self.vmExistingName:
             # use an existing VM (by name)
             self.name = self.vmExistingName
@@ -134,7 +136,6 @@ class MalcolmVM(object):
                 exitCode = 0
             else:
                 self.logger.info(f'{self.name} does not already exist')
-                exitCode = 1
 
         elif shuttingDown[0] == False:
             # use virter to execute a virtual machine
@@ -168,9 +169,6 @@ class MalcolmVM(object):
                 debug=self.debug,
                 logger=self.logger,
             )
-
-        else:
-            exitCode = 1
 
         if exitCode == 0:
             self.PrintVirterLogOutput(output)

@@ -214,4 +214,6 @@ popd
 sudo usermod -a -G docker "$USER"
 sudo loginctl enable-linger "$USER"
 sudo ln -s -r /usr/libexec/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+sudo update-grub2
+sudo nohup reboot &>/dev/null &
 '''
