@@ -57,25 +57,27 @@ class MalcolmVM(object):
         debug=False,
         logger=None,
     ):
-        self.args = copy.deepcopy(args)
+        # copy all attributes from the argparse Namespace to the object itself
+        for key, value in vars(args).items():
+            setattr(self, key, value)
         self.debug = debug
         self.logger = logger
         self.id = None
         self.name = None
 
-        self.vmTomlMalcolmInitPath = os.path.join(self.args.vmProvisionPath, 'malcolm-init')
-        self.vmTomlMalcolmFiniPath = os.path.join(self.args.vmProvisionPath, 'malcolm-fini')
-        self.vmTomlVMInitPath = os.path.join(self.args.vmProvisionPath, os.path.join(self.args.vmImage, 'init'))
-        self.vmTomlVMFiniPath = os.path.join(self.args.vmProvisionPath, os.path.join(self.args.vmImage, 'fini'))
+        self.vmTomlMalcolmInitPath = os.path.join(self.vmProvisionPath, 'malcolm-init')
+        self.vmTomlMalcolmFiniPath = os.path.join(self.vmProvisionPath, 'malcolm-fini')
+        self.vmTomlVMInitPath = os.path.join(self.vmProvisionPath, os.path.join(self.vmImage, 'init'))
+        self.vmTomlVMFiniPath = os.path.join(self.vmProvisionPath, os.path.join(self.vmImage, 'fini'))
 
         self.osEnv = os.environ.copy()
         self.osEnv.pop('SSH_AUTH_SOCK', None)
         # TODO: this does't seem to work...
-        # if self.args.verbose > logging.DEBUG:
+        # if self.verbose > logging.DEBUG:
         #     osEnv["VIRTER_LOG_LEVEL"] = 'debug'
-        # elif self.args.verbose > logging.INFO:
+        # elif self.verbose > logging.INFO:
         #     osEnv["VIRTER_LOG_LEVEL"] = 'info'
-        # elif self.args.verbose > logging.WARNING:
+        # elif self.verbose > logging.WARNING:
         #     osEnv["VIRTER_LOG_LEVEL"] = 'warning'
         # else:
         #     osEnv["VIRTER_LOG_LEVEL"] = 'error'
@@ -84,9 +86,9 @@ class MalcolmVM(object):
             '--set',
             f"env.VERBOSE={str(debug).lower()}",
             '--set',
-            f"env.REPO_URL={self.args.repoUrl}",
+            f"env.REPO_URL={self.repoUrl}",
             '--set',
-            f"env.REPO_BRANCH={self.args.repoBranch}",
+            f"env.REPO_BRANCH={self.repoBranch}",
         ]
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,7 +97,7 @@ class MalcolmVM(object):
         try:
             self.ProvisionFini()
         finally:
-            if self.args.removeAfterExec:
+            if self.removeAfterExec:
                 tmpExitCode, output = mmguero.RunProcess(
                     ['virter', 'vm', 'rm', self.name],
                     env=self.osEnv,
@@ -112,9 +114,9 @@ class MalcolmVM(object):
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def Start(self):
-        if self.args.vmExistingName:
+        if self.vmExistingName:
             # use an existing VM (by name)
-            self.name = self.args.vmExistingName
+            self.name = self.vmExistingName
             exitCode, output = mmguero.RunProcess(
                 ['virter', 'vm', 'exists', self.name],
                 env=self.osEnv,
@@ -126,24 +128,24 @@ class MalcolmVM(object):
         else:
             # use virter to execute a virtual machine
             self.id = 120 + randrange(80)
-            self.name = f"{self.args.vmNamePrefix}-{self.id}"
+            self.name = f"{self.vmNamePrefix}-{self.id}"
             cmd = [
                 'virter',
                 'vm',
                 'run',
-                self.args.vmImage,
+                self.vmImage,
                 '--id',
                 self.id,
                 '--name',
                 self.name,
                 '--vcpus',
-                self.args.vmCpuCount,
+                self.vmCpuCount,
                 '--memory',
-                f'{self.args.vmMemoryGigabytes}GB',
+                f'{self.vmMemoryGigabytes}GB',
                 '--bootcapacity',
-                f'{self.args.vmDiskGigabytes}GB',
+                f'{self.vmDiskGigabytes}GB',
                 '--user',
-                self.args.vmImageUsername,
+                self.vmImageUsername,
                 '--wait-ssh',
             ]
 
@@ -192,7 +194,7 @@ class MalcolmVM(object):
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionInit(self):
-        if self.args.vmProvision and os.path.isdir(self.args.vmProvisionPath):
+        if self.vmProvision and os.path.isdir(self.vmProvisionPath):
 
             # first execute any provisioning in this image's "init" directory, if it exists
             #   (this needs to install rsync if it's not already part of the image)
@@ -201,7 +203,7 @@ class MalcolmVM(object):
                     self.ProvisionFile(provisionFile)
 
             # now, rsync the container image file to the VM if specified
-            if self.args.containerImageFile:
+            if self.containerImageFile:
                 with mmguero.TemporaryFilename(suffix='.toml') as tomlFileName:
                     with open(tomlFileName, 'w') as tomlFile:
                         tomlFile.write(
@@ -211,7 +213,7 @@ class MalcolmVM(object):
                                     'steps': [
                                         {
                                             'rsync': {
-                                                'source': self.args.containerImageFile,
+                                                'source': self.containerImageFile,
                                                 'dest': "/tmp/malcolm_images.tar.xz",
                                             }
                                         }
@@ -234,7 +236,7 @@ class MalcolmVM(object):
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionFini(self):
-        if self.args.vmProvision and os.path.isdir(self.args.vmProvisionPath):
+        if self.vmProvision and os.path.isdir(self.vmProvisionPath):
 
             # now execute provisioning from the "malcolm fini" directory
             if os.path.isdir(self.vmTomlMalcolmFiniPath):
