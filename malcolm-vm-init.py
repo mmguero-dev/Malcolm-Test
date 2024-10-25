@@ -141,9 +141,9 @@ class MalcolmVM(object):
             self.vmBuildName = petname.Generate()
         self.buildNameCur = ''
         self.buildNamePre.append(self.vmImage)
-        exitCode = self.ProvisionInit()
+        self.ProvisionInit()
 
-        return exitCode
+        return 0
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def Start(self):
@@ -212,32 +212,37 @@ class MalcolmVM(object):
         self, provisionFile, continueThroughShutdown=False, tolerateFailure=False, overrideBuildName=None
     ):
         global shuttingDown
+        skipped = False
 
         if (shuttingDown[0] == False) or (continueThroughShutdown == True):
 
             if self.buildMode:
-                self.id = 120 + randrange(80)
-                self.name = f"{self.vmNamePrefix}-{self.id}"
-                self.buildNameCur = overrideBuildName if overrideBuildName else petname.Generate()
-                cmd = [
-                    'virter',
-                    'image',
-                    'build',
-                    self.buildNamePre[-1],
-                    self.buildNameCur,
-                    '--id',
-                    self.id,
-                    '--name',
-                    self.name,
-                    '--vcpus',
-                    self.vmCpuCount,
-                    '--memory',
-                    f'{self.vmMemoryGigabytes}GB',
-                    '--bootcap',
-                    f'{self.vmDiskGigabytes}GB',
-                    '--provision',
-                    provisionFile,
-                ]
+                if os.path.basename(provisionFile) == '99-reboot.toml':
+                    code = 0
+                    skipped = True
+                else:
+                    self.id = 120 + randrange(80)
+                    self.name = f"{self.vmNamePrefix}-{self.id}"
+                    self.buildNameCur = overrideBuildName if overrideBuildName else petname.Generate()
+                    cmd = [
+                        'virter',
+                        'image',
+                        'build',
+                        self.buildNamePre[-1],
+                        self.buildNameCur,
+                        '--id',
+                        self.id,
+                        '--name',
+                        self.name,
+                        '--vcpus',
+                        self.vmCpuCount,
+                        '--memory',
+                        f'{self.vmMemoryGigabytes}GB',
+                        '--bootcap',
+                        f'{self.vmDiskGigabytes}GB',
+                        '--provision',
+                        provisionFile,
+                    ]
             else:
                 cmd = [
                     'virter',
@@ -261,7 +266,7 @@ class MalcolmVM(object):
             )
             if (code == 0) or (tolerateFailure == True):
                 self.PrintVirterLogOutput(out)
-                if self.buildMode:
+                if self.buildMode and (skipped == False):
                     self.buildNamePre.append(self.buildNameCur)
             else:
                 raise subprocess.CalledProcessError(code, cmd, output=out)

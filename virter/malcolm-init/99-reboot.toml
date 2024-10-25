@@ -3,6 +3,5 @@ version = 1
 [[steps]]
 [steps.shell]
 script = '''
-sudo update-grub2
 sudo nohup reboot &>/dev/null &
 '''
