@@ -322,7 +322,7 @@ class MalcolmVM(object):
 
             # sleep a bit, if indicated
             sleepCtr = 0
-            while (shuttingDown[0] == False) and (sleepCtr < self.postInitSleep):
+            while (shuttingDown[0] == False) and (self.buildMode == False) and (sleepCtr < self.postInitSleep):
                 sleepCtr = sleepCtr + 1
                 time.sleep(1)
 
