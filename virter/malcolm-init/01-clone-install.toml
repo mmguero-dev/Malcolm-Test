@@ -206,7 +206,7 @@ python3 ./scripts/install.py --defaults \
     --live-capture-tcpdump "$LIVE_CAPTURE_TCPDUMP" \
     --live-capture-zeek "$LIVE_CAPTURE_ZEEK" \
     --live-capture-suricata "$LIVE_CAPTURE_SURICATA" \
-    --node-name "$NODE_NAME"
+    --node-name "$NODE_NAME" &>/dev/null || true
 popd
 
 popd

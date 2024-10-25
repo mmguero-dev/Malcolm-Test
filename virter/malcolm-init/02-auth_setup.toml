@@ -25,6 +25,6 @@ python3 ./scripts/auth_setup \
     --auth-admin-password-htpasswd "$AUTH_PASSWORD_HTPASSWD" \
     --auth-generate-webcerts \
     --auth-generate-fwcerts \
-    --auth-generate-netbox-passwords
+    --auth-generate-netbox-passwords &>/dev/null || true
 popd
 '''

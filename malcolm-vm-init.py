@@ -10,6 +10,7 @@ import logging
 import mmguero
 import multiprocessing
 import os
+import petname
 import psutil
 import re
 import signal
@@ -65,6 +66,10 @@ class MalcolmVM(object):
         self.id = None
         self.name = None
 
+        self.buildMode = False
+        self.buildNameCur = ''
+        self.buildNamePre = []
+
         self.vmTomlMalcolmInitPath = os.path.join(self.vmProvisionPath, 'malcolm-init')
         self.vmTomlMalcolmFiniPath = os.path.join(self.vmProvisionPath, 'malcolm-fini')
         self.vmTomlVMInitPath = os.path.join(self.vmProvisionPath, os.path.join(self.vmImage, 'init'))
@@ -102,7 +107,7 @@ class MalcolmVM(object):
         try:
             self.ProvisionFini()
         finally:
-            if self.removeAfterExec:
+            if self.removeAfterExec and not self.buildMode:
                 tmpExitCode, output = mmguero.RunProcess(
                     ['virter', 'vm', 'rm', self.name],
                     env=self.osEnv,
@@ -128,8 +133,23 @@ class MalcolmVM(object):
         return bool(exitCode == 0)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    def Build(self):
+        self.buildMode = True
+
+        # use virter to build a new virtual machine image
+        if not self.vmBuildName:
+            self.vmBuildName = petname.Generate()
+        self.buildNameCur = ''
+        self.buildNamePre.append(self.vmImage)
+        exitCode = self.ProvisionInit()
+
+        return exitCode
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def Start(self):
         global shuttingDown
+
+        self.buildMode = False
 
         output = []
         exitCode = 1
@@ -181,24 +201,57 @@ class MalcolmVM(object):
         else:
             raise subprocess.CalledProcessError(exitCode, cmd, output=output)
 
-        self.logger.info('Malcolm is started and ready to process data')
+        if self.startMalcolm:
+            self.logger.info(f'Malcolm is started and ready to process data on {self.name}')
+        else:
+            self.logger.info(f'{self.name} is provisioned and running')
         return exitCode
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    def ProvisionFile(self, provisionFile, continueThroughShutdown=False, tolerateFailure=False):
+    def ProvisionFile(
+        self, provisionFile, continueThroughShutdown=False, tolerateFailure=False, overrideBuildName=None
+    ):
         global shuttingDown
 
         if (shuttingDown[0] == False) or (continueThroughShutdown == True):
-            cmd = [
-                'virter',
-                'vm',
-                'exec',
-                self.name,
-                '--provision',
-                provisionFile,
-            ]
+
+            if self.buildMode:
+                self.id = 120 + randrange(80)
+                self.name = f"{self.vmNamePrefix}-{self.id}"
+                self.buildNameCur = overrideBuildName if overrideBuildName else petname.Generate()
+                cmd = [
+                    'virter',
+                    'image',
+                    'build',
+                    self.buildNamePre[-1],
+                    self.buildNameCur,
+                    '--id',
+                    self.id,
+                    '--name',
+                    self.name,
+                    '--vcpus',
+                    self.vmCpuCount,
+                    '--memory',
+                    f'{self.vmMemoryGigabytes}GB',
+                    '--bootcap',
+                    f'{self.vmDiskGigabytes}GB',
+                    '--provision',
+                    provisionFile,
+                ]
+            else:
+                cmd = [
+                    'virter',
+                    'vm',
+                    'exec',
+                    self.name,
+                    '--provision',
+                    provisionFile,
+                ]
+
             if self.provisionEnvArgs:
                 cmd.extend(self.provisionEnvArgs)
+
+            cmd = [str(x) for x in list(mmguero.Flatten(cmd))]
             self.logger.info(cmd)
             code, out = mmguero.RunProcess(
                 cmd,
@@ -208,6 +261,8 @@ class MalcolmVM(object):
             )
             if (code == 0) or (tolerateFailure == True):
                 self.PrintVirterLogOutput(out)
+                if self.buildMode:
+                    self.buildNamePre.append(self.buildNameCur)
             else:
                 raise subprocess.CalledProcessError(code, cmd, output=out)
 
@@ -220,7 +275,7 @@ class MalcolmVM(object):
     def ProvisionInit(self):
         global shuttingDown
 
-        if self.vmProvision and os.path.isdir(self.vmProvisionPath):
+        if (self.vmProvision or self.vmBuildName) and os.path.isdir(self.vmProvisionPath):
 
             # first execute any provisioning in this image's "init" directory, if it exists
             #   (this needs to install rsync if it's not already part of the image)
@@ -240,7 +295,7 @@ class MalcolmVM(object):
                                         {
                                             'rsync': {
                                                 'source': self.containerImageFile,
-                                                'dest': "/tmp/malcolm_images.tar.xz",
+                                                'dest': f"{'' if self.buildMode else '/tmp'}/malcolm_images.tar.xz",
                                             }
                                         }
                                     ],
@@ -251,7 +306,7 @@ class MalcolmVM(object):
                     self.provisionEnvArgs.extend(
                         [
                             '--set',
-                            f"env.IMAGE_FILE=/tmp/malcolm_images.tar.xz",
+                            f"env.IMAGE_FILE={'' if self.buildMode else '/tmp'}/malcolm_images.tar.xz",
                         ]
                     )
 
@@ -267,7 +322,7 @@ class MalcolmVM(object):
                 time.sleep(1)
 
             # finally, start Malcolm and wait for it to become ready to process data
-            if self.startMalcolm and (shuttingDown[0] == False):
+            if (self.buildMode == False) and self.startMalcolm and (shuttingDown[0] == False):
                 with mmguero.TemporaryFilename(suffix='.toml') as tomlFileName:
                     with open(tomlFileName, 'w') as tomlFile:
                         tomlFile.write(
@@ -309,6 +364,38 @@ class MalcolmVM(object):
             if os.path.isdir(self.vmTomlVMFiniPath):
                 for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlVMFiniPath, '*.toml'))):
                     self.ProvisionFile(provisionFile, continueThroughShutdown=True)
+
+            # if we're in a build mode, we need to "tag" our final build
+            if self.buildMode and self.buildNameCur:
+                if self.containerImageFile:
+                    with mmguero.TemporaryFilename(suffix='.toml') as tomlFileName:
+                        with open(tomlFileName, 'w') as tomlFile:
+                            tomlFile.write(
+                                toml.dumps(
+                                    {
+                                        'version': 1,
+                                        'steps': [
+                                            {
+                                                'shell': {
+                                                    'script': '''
+                                                        echo "Image provisioned"
+                                                    '''
+                                                }
+                                            }
+                                        ],
+                                    }
+                                )
+                            )
+                        self.ProvisionFile(tomlFileName, overrideBuildName=self.vmBuildName)
+                        if not self.vmBuildKeepLayers and self.buildNamePre:
+                            for layer in self.buildNamePre:
+                                if layer not in [self.vmBuildName, self.vmImage]:
+                                    tmpCode, tmpOut = mmguero.RunProcess(
+                                        ['virter', 'image', 'rm', layer],
+                                        env=self.osEnv,
+                                        debug=self.debug,
+                                        logger=self.logger,
+                                    )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def WaitForShutdown(self):
@@ -428,7 +515,7 @@ def main():
         dest='vmImage',
         metavar='<string>',
         type=str,
-        default=os.getenv('QEMU_IMAGE', 'debian-12'),
+        default=os.getenv('VIRTER_IMAGE', 'debian-12'),
         help='Malcolm virtual instance base image name (e.g., debian-12)',
     )
     vmSpecsArgGroup.add_argument(
@@ -437,7 +524,7 @@ def main():
         dest='vmImageUsername',
         metavar='<string>',
         type=str,
-        default=os.getenv('QEMU_USER', 'debian'),
+        default=os.getenv('VIRTER_USER', 'debian'),
         help='Malcolm virtual instance base image username (e.g., debian)',
     )
     vmSpecsArgGroup.add_argument(
@@ -446,7 +533,7 @@ def main():
         dest='vmNamePrefix',
         metavar='<string>',
         type=str,
-        default=os.getenv('QEMU_NAME_PREFIX', 'malcolm'),
+        default=os.getenv('VIRTER_NAME_PREFIX', 'malcolm'),
         help='Prefix for Malcolm VM name (e.g., malcolm)',
     )
     vmSpecsArgGroup.add_argument(
@@ -455,7 +542,7 @@ def main():
         dest='vmExistingName',
         metavar='<string>',
         type=str,
-        default=os.getenv('QEMU_EXISTING', ''),
+        default=os.getenv('VIRTER_EXISTING', ''),
         help='Name of an existing virter VM to use rather than starting up a new one',
     )
     vmSpecsArgGroup.add_argument(
@@ -474,8 +561,27 @@ def main():
         dest='vmProvisionPath',
         metavar='<string>',
         type=str,
-        default=os.getenv('QEMU_PROVISION_PATH', os.path.join(script_path, 'virter')),
+        default=os.getenv('VIRTER_PROVISION_PATH', os.path.join(script_path, 'virter')),
         help=f'Path containing subdirectories with TOML files for VM provisioning (e.g., {os.path.join(script_path, "virter")})',
+    )
+    vmSpecsArgGroup.add_argument(
+        '--build-vm',
+        required=False,
+        dest='vmBuildName',
+        metavar='<string>',
+        type=str,
+        default=os.getenv('VIRTER_BUILD_VM', ''),
+        help='The name for a new VM image to build and commit instead of running one',
+    )
+    vmSpecsArgGroup.add_argument(
+        '--build-vm-keep-layers',
+        dest='vmBuildKeepLayers',
+        type=mmguero.str2bool,
+        nargs='?',
+        metavar="true|false",
+        const=True,
+        default=False,
+        help=f"Don't remove intermediate layers when building a new VM image",
     )
 
     configArgGroup = parser.add_argument_group('Malcolm runtime configuration')
@@ -544,7 +650,10 @@ def main():
         logger=logging,
     )
     try:
-        exitCode = malcolmVm.Start()
+        if args.vmBuildName:
+            exitCode = malcolmVm.Build()
+        else:
+            exitCode = malcolmVm.Start()
         malcolmVm.WaitForShutdown()
     finally:
         del malcolmVm

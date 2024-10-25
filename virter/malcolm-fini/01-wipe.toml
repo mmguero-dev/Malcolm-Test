@@ -6,10 +6,11 @@ VERBOSE = "false"
 [[steps]]
 [steps.shell]
 script = '''
-echo "Shutting down and wiping Malcolm..."
-
-pushd "$HOME"/Malcolm
-python3 ./scripts/wipe \
-    --verbose "$VERBOSE"
-popd
+if [[ -d "$HOME"/Malcolm ]]; then
+    echo "Shutting down and wiping Malcolm..."
+    pushd "$HOME"/Malcolm
+    python3 ./scripts/wipe \
+        --verbose "$VERBOSE" || true
+    popd
+fi
 '''
