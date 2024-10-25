@@ -72,15 +72,6 @@ class MalcolmVM(object):
 
         self.osEnv = os.environ.copy()
         self.osEnv.pop('SSH_AUTH_SOCK', None)
-        # TODO: this does't seem to work...
-        # if self.verbose > logging.DEBUG:
-        #     osEnv["VIRTER_LOG_LEVEL"] = 'debug'
-        # elif self.verbose > logging.INFO:
-        #     osEnv["VIRTER_LOG_LEVEL"] = 'info'
-        # elif self.verbose > logging.WARNING:
-        #     osEnv["VIRTER_LOG_LEVEL"] = 'warning'
-        # else:
-        #     osEnv["VIRTER_LOG_LEVEL"] = 'error'
 
         self.provisionEnvArgs = [
             '--set',
@@ -90,6 +81,20 @@ class MalcolmVM(object):
             '--set',
             f"env.REPO_BRANCH={self.repoBranch}",
         ]
+
+        # We will take any environment variables prefixed with MALCOLM_
+        #   and pass them in as environment variables during provisioning
+        for varName, varVal in [
+            (key.upper(), value)
+            for key, value in self.osEnv.items()
+            if key.upper().startswith('MALCOLM_') and key.upper() not in ('MALCOLM_REPO_URL', 'MALCOLM_REPO_BRANCH')
+        ]:
+            self.provisionEnvArgs.extend(
+                [
+                    '--set',
+                    f"env.{varName.removeprefix("MALCOLM_")}={varVal}",
+                ]
+            )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def __del__(self):
