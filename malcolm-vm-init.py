@@ -342,11 +342,11 @@ def main():
     parser = argparse.ArgumentParser(
         description='\n'.join(
             [
-                '',
+                'See README.md for usage details.',
             ]
         ),
         formatter_class=argparse.RawTextHelpFormatter,
-        add_help=False,
+        add_help=True,
         usage=f'{script_name} <arguments>',
     )
     parser.add_argument(
@@ -486,7 +486,7 @@ def main():
         metavar='<string>',
         type=str,
         default='',
-        help='Malcolm container images .tar.xz file for installation (instead of "docker load")',
+        help='Malcolm container images .tar.xz file for installation (instead of "docker pull")',
     )
     configArgGroup.add_argument(
         '-s',
@@ -528,13 +528,19 @@ def main():
     if args.verbose > logging.DEBUG:
         sys.tracebacklimit = 0
 
+    # the whole thing runs on virter, so if we don't have that what are we even doing here
+    err, _ = mmguero.RunProcess(['virter', 'version'])
+    if err != 0:
+        logging.error(f'{script_name} requires virter, please see https://github.com/LINBIT/virter')
+        return 1
+
     # handle sigint and sigterm for graceful shutdown
     signal.signal(signal.SIGINT, shutdown_handler)
     signal.signal(signal.SIGTERM, shutdown_handler)
 
     malcolmVm = MalcolmVM(
         args=args,
-        debug=(args.verbose > logging.DEBUG),
+        debug=(args.verbose <= logging.DEBUG),
         logger=logging,
     )
     try:
