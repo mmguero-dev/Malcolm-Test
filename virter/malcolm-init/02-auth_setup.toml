@@ -14,17 +14,18 @@ AUTH_PASSWORD_HTPASSWD = '$2y$05$a8jiJsLZ1mFnt5srJD3HAOKC8IUaZcOlsqp8txBlmMjW6wU
 [[steps]]
 [steps.shell]
 script = '''
-echo "Setting up authentication..."
-
-pushd "$HOME"/Malcolm
-python3 ./scripts/auth_setup \
-    --verbose "$VERBOSE" \
-    --auth-noninteractive \
-    --auth-admin-username "$AUTH_USERNAME" \
-    --auth-admin-password-openssl "$AUTH_PASSWORD_OPENSSL" \
-    --auth-admin-password-htpasswd "$AUTH_PASSWORD_HTPASSWD" \
-    --auth-generate-webcerts \
-    --auth-generate-fwcerts \
-    --auth-generate-netbox-passwords &>/dev/null || true
-popd
+if [[ -d "$HOME"/Malcolm ]]; then
+    echo "Setting up authentication..."
+    pushd "$HOME"/Malcolm
+    python3 ./scripts/auth_setup \
+        --verbose "$VERBOSE" \
+        --auth-noninteractive \
+        --auth-admin-username "$AUTH_USERNAME" \
+        --auth-admin-password-openssl "$AUTH_PASSWORD_OPENSSL" \
+        --auth-admin-password-htpasswd "$AUTH_PASSWORD_HTPASSWD" \
+        --auth-generate-webcerts \
+        --auth-generate-fwcerts \
+        --auth-generate-netbox-passwords &>/dev/null || true
+    popd
+fi
 '''

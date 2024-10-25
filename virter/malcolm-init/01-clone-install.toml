@@ -89,11 +89,6 @@ LIVE_CAPTURE_ZEEK = "false"
 LIVE_CAPTURE_SURICATA = "false"
 NODE_NAME = "Malcolm"
 
-# username: analyst
-# password: M@lc0lm
-AUTH_USERNAME = '$1$owXoS5pf$YesZKhhWS0d3zVUUhdcef0'
-AUTH_PASSWORD = '$2y$05$a8jiJsLZ1mFnt5srJD3HAOKC8IUaZcOlsqp8txBlmMjW6wUXUtN3S'
-
 [[steps]]
 [steps.shell]
 script = '''
@@ -103,7 +98,7 @@ pushd "$HOME"
 touch "$HOME"/.hushlogin
 mkdir -p "$HOME"/.local/bin "$HOME"/.config/procps "$HOME"/.config/systemd/user
 
-git clone --depth=1 --single-branch --recurse-submodules --shallow-submodules -b "$REPO_BRANCH" "$REPO_URL" Malcolm
+[[ ! -d ./Malcolm ]] && git clone --depth=1 --single-branch --recurse-submodules --shallow-submodules -b "$REPO_BRANCH" "$REPO_URL" Malcolm
 
 rm -f "$HOME"/.bashrc \
       "$HOME"/.bash_aliases \
@@ -112,13 +107,13 @@ rm -f "$HOME"/.bashrc \
       "$HOME"/.selected_editor \
       "$HOME"/.tmux.conf \
       "$HOME"/.vimrc
-ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/bash.bash_aliases "$HOME"/.bash_aliases
-ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/bash.bash_functions "$HOME"/.bash_functions
-ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.bashrc "$HOME"/.bashrc
-ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.config/procps/toprc "$HOME"/.config/procps/toprc
-ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.selected_editor "$HOME"/.selected_editor
-ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.tmux.conf "$HOME"/.tmux.conf
-ln -s -r "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.vimrc "$HOME"/.vimrc
+ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/bash.bash_aliases "$HOME"/.bash_aliases
+ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/bash.bash_functions "$HOME"/.bash_functions
+ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.bashrc "$HOME"/.bashrc
+ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.config/procps/toprc "$HOME"/.config/procps/toprc
+ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.selected_editor "$HOME"/.selected_editor
+ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.tmux.conf "$HOME"/.tmux.conf
+ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.vimrc "$HOME"/.vimrc
 ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.config/systemd/user/*.service "$HOME"/.config/systemd/user/
 
 pushd Malcolm
@@ -214,5 +209,5 @@ popd
 sudo update-grub2
 sudo usermod -a -G docker "$USER"
 sudo loginctl enable-linger "$USER"
-sudo ln -s -r /usr/libexec/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+sudo ln -s -r -f /usr/libexec/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 '''

@@ -218,7 +218,6 @@ class MalcolmVM(object):
 
             if self.buildMode:
                 if os.path.basename(provisionFile) == '99-reboot.toml':
-                    code = 0
                     skipped = True
                 else:
                     self.id = 120 + randrange(80)
@@ -253,17 +252,21 @@ class MalcolmVM(object):
                     provisionFile,
                 ]
 
-            if self.provisionEnvArgs:
-                cmd.extend(self.provisionEnvArgs)
+            if skipped:
+                code = 0
+                out = []
+            else:
+                if self.provisionEnvArgs:
+                    cmd.extend(self.provisionEnvArgs)
+                cmd = [str(x) for x in list(mmguero.Flatten(cmd))]
+                self.logger.info(cmd)
+                code, out = mmguero.RunProcess(
+                    cmd,
+                    env=self.osEnv,
+                    debug=self.debug,
+                    logger=self.logger,
+                )
 
-            cmd = [str(x) for x in list(mmguero.Flatten(cmd))]
-            self.logger.info(cmd)
-            code, out = mmguero.RunProcess(
-                cmd,
-                env=self.osEnv,
-                debug=self.debug,
-                logger=self.logger,
-            )
             if (code == 0) or (tolerateFailure == True):
                 self.PrintVirterLogOutput(out)
                 if self.buildMode and (skipped == False):
@@ -659,7 +662,7 @@ def main():
             exitCode = malcolmVm.Build()
         else:
             exitCode = malcolmVm.Start()
-        malcolmVm.WaitForShutdown()
+            malcolmVm.WaitForShutdown()
     finally:
         del malcolmVm
 

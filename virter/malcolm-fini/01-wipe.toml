@@ -10,7 +10,7 @@ if [[ -d "$HOME"/Malcolm ]]; then
     echo "Shutting down and wiping Malcolm..."
     pushd "$HOME"/Malcolm
     python3 ./scripts/wipe \
-        --verbose "$VERBOSE" || true
+        --verbose "$VERBOSE" &>/dev/null || true
     popd
 fi
 '''

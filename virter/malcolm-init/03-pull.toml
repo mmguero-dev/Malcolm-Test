@@ -8,15 +8,16 @@ RUNTIME = "docker"
 [steps.shell]
 script = '''
 
-pushd "$HOME"/Malcolm
 if [[ -f "$IMAGE_FILE" ]]; then
     echo "Loading Malcolm container images..."
     unxz < "$IMAGE_FILE" | "$RUNTIME" load
     rm -f "$IMAGE_FILE"
-else
+elif [[ -d "$HOME"/Malcolm ]]; then
+    pushd "$HOME"/Malcolm
     echo "Pulling Malcolm container images..."
     ./scripts/github_image_helper.sh "$(./scripts/github_image_helper.sh 99999 2>&1 | grep PullAndTagGithubWorkflowImages | awk '{print $1}')"
+    popd
 fi
-popd
+
 "$RUNTIME" images
 '''
