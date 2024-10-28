@@ -1,11 +1,37 @@
 [build-system]
-requires = [
-    "setuptools>=62.3.0",
-    "wheel"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "malcolm-test"
+version = "0.0.1"
+authors = [
+  { name="Seth Grover", email="mero.mero.guero@gmail.com" },
 ]
-build-backend = "setuptools.build_meta"
+description = "A package for performing tests against a Malcolm system"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    'mmguero',
+    'petname==2.6',
+    'pytest==8.3.3',
+    'toml==0.10.2'
+]
+
+[project.urls]
+Homepage = "https://github.com/mmguero-dev/malcolm-test"
+Issues = "https://github.com/mmguero-dev/malcolm-test/issues"
+
+[project.scripts]
+malcolm-test = "malcolm_test:main"
 
 [tool.pytest.ini_options]
+pythonpath = "src"
 addopts = [
     "--import-mode=importlib",
 ]
