@@ -1,25 +1,25 @@
 # Malcolm-Test
 
-## Repository Layout
+## Package source layout (under `src/malcolm_test`)
 
+* 🐍 [`malcolm_test.py`](#MalcolmVMInitScript) - A Python script for running Malcolm in a VM with virter (see below)
+* 🐍 `__init__.py` - Python package definition file
 * 🗁 `virter/` - A directory structure containing TOML files for [provisioning](https://github.com/LINBIT/virter/blob/master/doc/provisioning.md) the virter VMs in which Malcolm will run. Its subdirectories are arranged thusly:
-    - 🗁 `debian-12/` - A directory matching the name of the virter image (supplied to [`malcolm-vm-init.py`](#MalcolmVMInitScript) with the `-i`/`--image` argument)
+    - 🗁 `debian-12/` - A directory matching the name of the virter image (supplied to [`malcolm_test.py`](#MalcolmVMInitScript) with the `-i`/`--image` argument)
         + 🗁 `init/` - TOML files for the initial steps of provisioning the OS (before setting up and starting Malcolm)
         + 🗁 `fini/` - TOML files for the final stages of provisioning the OS (after shutting down Malcolm)
     - 🗁 `malcolm-init/` - Distribution-agnostic provisioning TOML files for setting up Malcolm prior to starting it
     - 🗁 `malcolm-fini/` - Distribution-agnostic provisioning TOML files for tearing down Malcolm after tests are complete
-* 🐍 [`malcolm-vm-init.py`](#MalcolmVMInitScript) - A Python script for running Malcolm in a VM with virter (see below)
-* ⍰ `README.md` - The document you ar reading now
-* 🖹 `requirements.txt`- The [Python pip requirements.txt file](https://pip.pypa.io/en/stable/reference/requirements-file-format/) containing the dependencies of `malcolm-vm-init.py`
+* 🗁 `tests/` - A directory structure containing the test definitions, built using the [pytest](https://docs.pytest.org/en/stable/) framework
 
-## <a name="MalcolmVMInitScript"></a> malcolm-vm-init.py
+## <a name="MalcolmVMInitScript"></a> malcolm_test.py
 
-`malcolm-vm-init.py` is a Python script for Linux that uses [virter](https://github.com/LINBIT/virter) (a command line tool for simple creation and cloning of virtual machines) to run an instance of [Malcolm](https://github.com/idaholab/malcolm/) against which automated system tests can be run. 
+`malcolm_test.py` is a Python script for Linux that uses [virter](https://github.com/LINBIT/virter) (a command line tool for simple creation and cloning of virtual machines) to run an instance of [Malcolm](https://github.com/idaholab/malcolm/) against which automated system tests can be run. 
 
 ### Usage
 
 ```
-usage: malcolm-vm-init.py <arguments>
+usage: malcolm_test.py <arguments>
 
 options:
   --verbose, -v         Increase verbosity (e.g., -v, -vv, etc.)
@@ -65,7 +65,7 @@ Malcolm runtime configuration:
 *with INFO-level `-vv` verbosity, output reduced for length*
 
 ```
-2024-10-25 12:42:51 INFO: /home/user/Malcolm-Test/malcolm-vm-init.py
+2024-10-25 12:42:51 INFO: /home/user/Malcolm-Test/malcolm_test.py
 2024-10-25 12:42:51 INFO: Arguments: ['-vv', '--rm', '--github-url', 'https://github.com/idaholab/Malcolm', '--github-branch', 'main']
 2024-10-25 12:42:51 INFO: Arguments: Namespace(verbose=20, removeAfterExec=True, repoUrl='https://github.com/idaholab/Malcolm', repoBranch='main', vmCpuCount=8, vmMemoryGigabytes=31, vmDiskGigabytes=64, vmImage='debian-12', vmImageUsername='debian', vmNamePrefix='malcolm', vmExistingName='', vmProvision=True, vmProvisionPath='/home/user/Malcolm-Test/virter', containerImageFile='', startMalcolm=True, postInitSleep=30)
 2024-10-25 12:42:51 INFO: ['virter', 'vm', 'run', 'debian-12', '--id', '126', '--name', 'malcolm-126', '--vcpus', '8', '--memory', '31GB', '--bootcapacity', '64GB', '--user', 'debian', '--wait-ssh']
