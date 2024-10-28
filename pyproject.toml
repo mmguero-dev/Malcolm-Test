@@ -25,8 +25,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/mmguero-dev/malcolm-test"
-Issues = "https://github.com/mmguero-dev/malcolm-test/issues"
+Homepage = "https://github.com/idaholab/malcolm-test"
+Issues = "https://github.com/idaholab/malcolm-test/issues"
 
 [project.scripts]
 malcolm-test = "malcolm_test:main"
