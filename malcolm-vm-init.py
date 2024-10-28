@@ -137,6 +137,54 @@ class MalcolmVM(object):
         return bool(exitCode == 0)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    # for the running vm represented by this object, return something like this:
+    # {
+    #   "id": "136",
+    #   "network": "default",
+    #   "mac": "52:54:00:00:00:88",
+    #   "ip": "192.168.122.136",
+    #   "hostname": "malcolm-136",
+    #   "host_device": "vnet0"
+    # }
+    def Info(self):
+        result = {}
+        exitCode, output = mmguero.RunProcess(
+            ['virter', 'vm', 'list'],
+            env=self.osEnv,
+            debug=self.debug,
+            logger=self.logger,
+        )
+        if (exitCode == 0) and (len(output) > 1):
+            vmListRegex = re.compile(r'(\S+)(?:\s+(\S+))?(?:\s+(.*))?')
+            vms = {}
+            for line in output[1:]:
+                if match := vmListRegex.match(line):
+                    name = match.group(1)
+                    id_ = match.group(2) if match.group(2) else None
+                    network = match.group(3).strip() if match.group(3) else None
+                    vms[name] = {"id": id_, "name": name, "network": network}
+            result = vms.get(self.name, {})
+            if result and result.get('network', None):
+                exitCode, output = mmguero.RunProcess(
+                    ['virter', 'network', 'list-attached', result['network']],
+                    env=self.osEnv,
+                    debug=self.debug,
+                    logger=self.logger,
+                )
+                if (exitCode == 0) and (len(output) > 1):
+                    for line in output[1:]:
+                        if (vals := line.split()) and (len(vals) >= 2) and (vals[0] == self.name):
+                            result['mac'] = vals[1]
+                            if len(vals) >= 3:
+                                result['ip'] = vals[2]
+                            if len(vals) >= 4:
+                                result['hostname'] = vals[3]
+                            if len(vals) >= 5:
+                                result['host_device'] = vals[4]
+
+        return result
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def Build(self):
         self.buildMode = True
 
@@ -694,6 +742,7 @@ def main():
             exitCode = malcolmVm.Build()
         else:
             exitCode = malcolmVm.Start()
+            logging.info(json.dumps(malcolmVm.Info()))
             malcolmVm.WaitForShutdown()
     finally:
         del malcolmVm
