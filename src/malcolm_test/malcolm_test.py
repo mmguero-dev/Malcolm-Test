@@ -17,7 +17,8 @@ import signal
 import subprocess
 import sys
 import time
-import toml
+import tomli
+import tomli_w
 
 from random import randrange
 from collections import defaultdict
@@ -353,7 +354,7 @@ class MalcolmVM(object):
     ):
         with mmguero.TemporaryFilename(suffix='.toml') as tomlFileName:
             with open(tomlFileName, 'w') as tomlFile:
-                tomlFile.write(toml.dumps(data))
+                tomlFile.write(tomli_w.dumps(data))
             return self.ProvisionFile(
                 tomlFileName,
                 continueThroughShutdown=continueThroughShutdown,
