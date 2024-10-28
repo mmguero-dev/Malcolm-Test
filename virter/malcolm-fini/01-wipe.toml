@@ -8,9 +8,11 @@ VERBOSE = "false"
 script = '''
 if [[ -d "$HOME"/Malcolm ]]; then
     echo "Shutting down and wiping Malcolm..."
-    pushd "$HOME"/Malcolm
+    pushd "$HOME"/Malcolm &>/dev/null
     python3 ./scripts/wipe \
         --verbose "$VERBOSE" &>/dev/null || true
-    popd
+    popd &>/dev/null
+else
+    echo "Nothing to do!"
 fi
 '''

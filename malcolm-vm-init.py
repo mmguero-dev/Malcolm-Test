@@ -278,6 +278,7 @@ class MalcolmVM(object):
                 )
 
             if (code == 0) or (tolerateFailure == True):
+                code = 0
                 self.PrintVirterLogOutput(out)
                 if self.buildMode and (skipped == False):
                     self.buildNamePre.append(self.buildNameCur)
@@ -399,12 +400,12 @@ class MalcolmVM(object):
             # now execute provisioning from the "malcolm fini" directory
             if os.path.isdir(self.vmTomlMalcolmFiniPath):
                 for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmFiniPath, '*.toml'))):
-                    self.ProvisionFile(provisionFile, continueThroughShutdown=True)
+                    self.ProvisionFile(provisionFile, continueThroughShutdown=True, tolerateFailure=True)
 
             # finally, execute any provisioning in this image's "fini" directory, if it exists
             if os.path.isdir(self.vmTomlVMFiniPath):
                 for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlVMFiniPath, '*.toml'))):
-                    self.ProvisionFile(provisionFile, continueThroughShutdown=True)
+                    self.ProvisionFile(provisionFile, continueThroughShutdown=True, tolerateFailure=True)
 
             # if we're in a build mode, we need to "tag" our final build
             if self.buildMode and self.buildNameCur:
@@ -421,7 +422,10 @@ class MalcolmVM(object):
                                     }
                                 }
                             ],
-                        }
+                        },
+                        continueThroughShutdown=True,
+                        tolerateFailure=True,
+                        overrideBuildName=self.vmBuildName,
                     )
                     if not self.vmBuildKeepLayers and self.buildNamePre:
                         for layer in self.buildNamePre:

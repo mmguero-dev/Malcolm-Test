@@ -120,7 +120,6 @@ pushd Malcolm
 python3 ./scripts/install.py --defaults \
     --verbose "$VERBOSE" \
     --configure "$CONFIGURE_ONLY" \
-    --image-file "$IMAGE_FILE" \
     --runtime "$RUNTIME" \
     --malcolm-profile "$MALCOLM_PROFILE" \
     --dark-mode "$DARK_MODE" \
