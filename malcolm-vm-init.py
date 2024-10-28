@@ -148,6 +148,7 @@ class MalcolmVM(object):
     # }
     def Info(self):
         result = {}
+        # list the VMs so we can figure out the host network name of this one
         exitCode, output = mmguero.RunProcess(
             ['virter', 'vm', 'list'],
             env=self.osEnv,
@@ -155,6 +156,7 @@ class MalcolmVM(object):
             logger=self.logger,
         )
         if (exitCode == 0) and (len(output) > 1):
+            # split apart VM name, id, and network name info a dict
             vmListRegex = re.compile(r'(\S+)(?:\s+(\S+))?(?:\s+(.*))?')
             vms = {}
             for line in output[1:]:
@@ -163,8 +165,10 @@ class MalcolmVM(object):
                     id_ = match.group(2) if match.group(2) else None
                     network = match.group(3).strip() if match.group(3) else None
                     vms[name] = {"id": id_, "name": name, "network": network}
+            # see if we found this vm in the list of VMs returned
             result = vms.get(self.name, {})
             if result and result.get('network', None):
+                # get additional information about this VM's networking
                 exitCode, output = mmguero.RunProcess(
                     ['virter', 'network', 'list-attached', result['network']],
                     env=self.osEnv,
@@ -172,6 +176,7 @@ class MalcolmVM(object):
                     logger=self.logger,
                 )
                 if (exitCode == 0) and (len(output) > 1):
+                    # populate the result with the mac address, IP, hostname, and host device name
                     for line in output[1:]:
                         if (vals := line.split()) and (len(vals) >= 2) and (vals[0] == self.name):
                             result['mac'] = vals[1]
@@ -357,6 +362,53 @@ class MalcolmVM(object):
             )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    def CopyFile(
+        self,
+        sourceFileSpec,
+        destFileSpec,
+        makeDestDirWorldWritable=False,
+        continueThroughShutdown=False,
+        tolerateFailure=False,
+        overrideBuildName=None,
+    ):
+        code = 0
+        if makeDestDirWorldWritable:
+            code = self.ProvisionTOML(
+                data={
+                    'version': 1,
+                    'steps': [
+                        {
+                            'shell': {
+                                'script': f'sudo mkdir -p {os.path.dirname(destFileSpec)}\n'
+                                f'sudo chmod 777 {os.path.dirname(destFileSpec)}\n'
+                            }
+                        }
+                    ],
+                },
+                continueThroughShutdown=continueThroughShutdown,
+                tolerateFailure=tolerateFailure,
+                overrideBuildName=overrideBuildName,
+            )
+        if (code == 0) or (tolerateFailure == True):
+            code = self.ProvisionTOML(
+                data={
+                    'version': 1,
+                    'steps': [
+                        {
+                            'rsync': {
+                                'source': sourceFileSpec,
+                                'dest': destFileSpec,
+                            }
+                        }
+                    ],
+                },
+                continueThroughShutdown=continueThroughShutdown,
+                tolerateFailure=tolerateFailure,
+                overrideBuildName=overrideBuildName,
+            )
+        return code
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionInit(self):
         global shuttingDown
 
@@ -370,40 +422,20 @@ class MalcolmVM(object):
 
             # now, rsync the container image file to the VM if specified
             if self.containerImageFile:
-                self.ProvisionTOML(
-                    data={
-                        'version': 1,
-                        'steps': [
-                            {
-                                'shell': {
-                                    'script': '''
-                                        sudo mkdir -p /usr/local/share/images
-                                        sudo chmod 777 /usr/local/share/images
-                                    '''
-                                }
-                            }
-                        ],
-                    }
-                )
-                self.ProvisionTOML(
-                    data={
-                        'version': 1,
-                        'steps': [
-                            {
-                                'rsync': {
-                                    'source': self.containerImageFile,
-                                    'dest': f"/usr/local/share/images/malcolm_images.tar.xz",
-                                }
-                            }
-                        ],
-                    }
-                )
-                self.provisionEnvArgs.extend(
-                    [
-                        '--set',
-                        f"env.IMAGE_FILE=/usr/local/share/images/malcolm_images.tar.xz",
-                    ]
-                )
+                if (
+                    self.CopyFile(
+                        self.containerImageFile,
+                        '/usr/local/share/images/malcolm_images.tar.xz',
+                        makeDestDirWorldWritable=True,
+                    )
+                    == 0
+                ):
+                    self.provisionEnvArgs.extend(
+                        [
+                            '--set',
+                            f"env.IMAGE_FILE=/usr/local/share/images/malcolm_images.tar.xz",
+                        ]
+                    )
 
             # now execute provisioning from the "malcolm init" directory
             if os.path.isdir(self.vmTomlMalcolmInitPath):
