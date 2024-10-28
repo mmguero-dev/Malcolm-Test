@@ -85,6 +85,10 @@ class MalcolmVM(object):
             f"env.REPO_URL={self.repoUrl}",
             '--set',
             f"env.REPO_BRANCH={self.repoBranch}",
+            '--set',
+            f"env.DEBIAN_FRONTEND=noninteractive",
+            '--set',
+            f"env.TERM=xterm",
         ]
 
         # We will take any environment variables prefixed with MALCOLM_
@@ -209,7 +213,11 @@ class MalcolmVM(object):
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionFile(
-        self, provisionFile, continueThroughShutdown=False, tolerateFailure=False, overrideBuildName=None
+        self,
+        provisionFile,
+        continueThroughShutdown=False,
+        tolerateFailure=False,
+        overrideBuildName=None,
     ):
         global shuttingDown
         skipped = False
@@ -241,6 +249,8 @@ class MalcolmVM(object):
                         f'{self.vmDiskGigabytes}GB',
                         '--provision',
                         provisionFile,
+                        '--user',
+                        self.vmImageUsername,
                     ]
             else:
                 cmd = [
@@ -280,6 +290,24 @@ class MalcolmVM(object):
         return code
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    def ProvisionTOML(
+        self,
+        data,
+        continueThroughShutdown=False,
+        tolerateFailure=False,
+        overrideBuildName=None,
+    ):
+        with mmguero.TemporaryFilename(suffix='.toml') as tomlFileName:
+            with open(tomlFileName, 'w') as tomlFile:
+                tomlFile.write(toml.dumps(data))
+            return self.ProvisionFile(
+                tomlFileName,
+                continueThroughShutdown=continueThroughShutdown,
+                tolerateFailure=tolerateFailure,
+                overrideBuildName=overrideBuildName,
+            )
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionInit(self):
         global shuttingDown
 
@@ -293,30 +321,40 @@ class MalcolmVM(object):
 
             # now, rsync the container image file to the VM if specified
             if self.containerImageFile:
-                with mmguero.TemporaryFilename(suffix='.toml') as tomlFileName:
-                    with open(tomlFileName, 'w') as tomlFile:
-                        tomlFile.write(
-                            toml.dumps(
-                                {
-                                    'version': 1,
-                                    'steps': [
-                                        {
-                                            'rsync': {
-                                                'source': self.containerImageFile,
-                                                'dest': f"{'' if self.buildMode else '/tmp'}/malcolm_images.tar.xz",
-                                            }
-                                        }
-                                    ],
+                self.ProvisionTOML(
+                    data={
+                        'version': 1,
+                        'steps': [
+                            {
+                                'shell': {
+                                    'script': '''
+                                        sudo mkdir -p /usr/local/share/images
+                                        sudo chmod 777 /usr/local/share/images
+                                    '''
                                 }
-                            )
-                        )
-                    self.ProvisionFile(tomlFileName)
-                    self.provisionEnvArgs.extend(
-                        [
-                            '--set',
-                            f"env.IMAGE_FILE={'' if self.buildMode else '/tmp'}/malcolm_images.tar.xz",
-                        ]
-                    )
+                            }
+                        ],
+                    }
+                )
+                self.ProvisionTOML(
+                    data={
+                        'version': 1,
+                        'steps': [
+                            {
+                                'rsync': {
+                                    'source': self.containerImageFile,
+                                    'dest': f"/usr/local/share/images/malcolm_images.tar.xz",
+                                }
+                            }
+                        ],
+                    }
+                )
+                self.provisionEnvArgs.extend(
+                    [
+                        '--set',
+                        f"env.IMAGE_FILE=/usr/local/share/images/malcolm_images.tar.xz",
+                    ]
+                )
 
             # now execute provisioning from the "malcolm init" directory
             if os.path.isdir(self.vmTomlMalcolmInitPath):
@@ -331,33 +369,28 @@ class MalcolmVM(object):
 
             # finally, start Malcolm and wait for it to become ready to process data
             if (self.buildMode == False) and self.startMalcolm and (shuttingDown[0] == False):
-                with mmguero.TemporaryFilename(suffix='.toml') as tomlFileName:
-                    with open(tomlFileName, 'w') as tomlFile:
-                        tomlFile.write(
-                            toml.dumps(
-                                {
-                                    'version': 1,
-                                    'steps': [
-                                        {
-                                            'shell': {
-                                                'script': '''
-                                                    pushd ~/Malcolm &>/dev/null
-                                                    ~/Malcolm/scripts/start &>/dev/null &
-                                                    START_PID=$!
-                                                    sleep 30
-                                                    kill $START_PID
-                                                    sleep 10
-                                                    while [[ $(( docker compose exec api curl -sSL localhost:5000/mapi/ready 2>/dev/null | jq 'if (.arkime and .logstash_lumberjack and .logstash_pipelines and .opensearch and .pcap_monitor) then 1 else 0 end' 2>/dev/null ) || echo 0) != '1' ]]; do echo 'Waiting for Malcolm to become ready...' ; sleep 10; done
-                                                    echo 'Malcolm is ready!'
-                                                    popd &>/dev/null
-                                                '''
-                                            }
-                                        }
-                                    ],
+                self.ProvisionTOML(
+                    data={
+                        'version': 1,
+                        'steps': [
+                            {
+                                'shell': {
+                                    'script': '''
+                                        pushd ~/Malcolm &>/dev/null
+                                        ~/Malcolm/scripts/start &>/dev/null &
+                                        START_PID=$!
+                                        sleep 30
+                                        kill $START_PID
+                                        sleep 10
+                                        while [[ $(( docker compose exec api curl -sSL localhost:5000/mapi/ready 2>/dev/null | jq 'if (.arkime and .logstash_lumberjack and .logstash_pipelines and .opensearch and .pcap_monitor) then 1 else 0 end' 2>/dev/null ) || echo 0) != '1' ]]; do echo 'Waiting for Malcolm to become ready...' ; sleep 10; done
+                                        echo 'Malcolm is ready!'
+                                        popd &>/dev/null
+                                    '''
                                 }
-                            )
-                        )
-                    self.ProvisionFile(tomlFileName)
+                            }
+                        ],
+                    }
+                )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionFini(self):
@@ -376,34 +409,29 @@ class MalcolmVM(object):
             # if we're in a build mode, we need to "tag" our final build
             if self.buildMode and self.buildNameCur:
                 if self.containerImageFile:
-                    with mmguero.TemporaryFilename(suffix='.toml') as tomlFileName:
-                        with open(tomlFileName, 'w') as tomlFile:
-                            tomlFile.write(
-                                toml.dumps(
-                                    {
-                                        'version': 1,
-                                        'steps': [
-                                            {
-                                                'shell': {
-                                                    'script': '''
-                                                        echo "Image provisioned"
-                                                    '''
-                                                }
-                                            }
-                                        ],
+                    self.ProvisionTOML(
+                        data={
+                            'version': 1,
+                            'steps': [
+                                {
+                                    'shell': {
+                                        'script': '''
+                                            echo "Image provisioned"
+                                        '''
                                     }
+                                }
+                            ],
+                        }
+                    )
+                    if not self.vmBuildKeepLayers and self.buildNamePre:
+                        for layer in self.buildNamePre:
+                            if layer not in [self.vmBuildName, self.vmImage]:
+                                tmpCode, tmpOut = mmguero.RunProcess(
+                                    ['virter', 'image', 'rm', layer],
+                                    env=self.osEnv,
+                                    debug=self.debug,
+                                    logger=self.logger,
                                 )
-                            )
-                        self.ProvisionFile(tomlFileName, overrideBuildName=self.vmBuildName)
-                        if not self.vmBuildKeepLayers and self.buildNamePre:
-                            for layer in self.buildNamePre:
-                                if layer not in [self.vmBuildName, self.vmImage]:
-                                    tmpCode, tmpOut = mmguero.RunProcess(
-                                        ['virter', 'image', 'rm', layer],
-                                        env=self.osEnv,
-                                        debug=self.debug,
-                                        logger=self.logger,
-                                    )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def WaitForShutdown(self):

@@ -48,4 +48,5 @@ sudo apt-get -y -q --no-install-recommends install \
     zip \
     zlib1g
 sudo ln -s -r -f /usr/bin/batcat /usr/bin/bat
+sudo rm -f /etc/motd
 '''
