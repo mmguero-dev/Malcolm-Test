@@ -442,36 +442,36 @@ class MalcolmVM(object):
                 for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmInitPath, '*.toml'))):
                     self.ProvisionFile(provisionFile)
 
-            # sleep a bit, if indicated
-            sleepCtr = 0
-            while (shuttingDown[0] == False) and (self.buildMode == False) and (sleepCtr < self.postInitSleep):
-                sleepCtr = sleepCtr + 1
-                time.sleep(1)
+        # sleep a bit, if indicated
+        sleepCtr = 0
+        while (shuttingDown[0] == False) and (self.buildMode == False) and (sleepCtr < self.postInitSleep):
+            sleepCtr = sleepCtr + 1
+            time.sleep(1)
 
-            # finally, start Malcolm and wait for it to become ready to process data
-            if (self.buildMode == False) and self.startMalcolm and (shuttingDown[0] == False):
-                self.ProvisionTOML(
-                    data={
-                        'version': 1,
-                        'steps': [
-                            {
-                                'shell': {
-                                    'script': '''
-                                        pushd ~/Malcolm &>/dev/null
-                                        ~/Malcolm/scripts/start &>/dev/null &
-                                        START_PID=$!
-                                        sleep 30
-                                        kill $START_PID
-                                        sleep 10
-                                        while [[ $(( docker compose exec api curl -sSL localhost:5000/mapi/ready 2>/dev/null | jq 'if (.arkime and .logstash_lumberjack and .logstash_pipelines and .opensearch and .pcap_monitor) then 1 else 0 end' 2>/dev/null ) || echo 0) != '1' ]]; do echo 'Waiting for Malcolm to become ready...' ; sleep 10; done
-                                        echo 'Malcolm is ready!'
-                                        popd &>/dev/null
-                                    '''
-                                }
+        # start Malcolm and wait for it to become ready to process data
+        if (self.buildMode == False) and self.startMalcolm and (shuttingDown[0] == False):
+            self.ProvisionTOML(
+                data={
+                    'version': 1,
+                    'steps': [
+                        {
+                            'shell': {
+                                'script': '''
+                                    pushd ~/Malcolm &>/dev/null
+                                    ~/Malcolm/scripts/start &>/dev/null &
+                                    START_PID=$!
+                                    sleep 30
+                                    kill $START_PID
+                                    sleep 10
+                                    while [[ $(( docker compose exec api curl -sSL localhost:5000/mapi/ready 2>/dev/null | jq 'if (.arkime and .logstash_lumberjack and .logstash_pipelines and .opensearch and .pcap_monitor) then 1 else 0 end' 2>/dev/null ) || echo 0) != '1' ]]; do echo 'Waiting for Malcolm to become ready...' ; sleep 10; done
+                                    echo 'Malcolm is ready!'
+                                    popd &>/dev/null
+                                '''
                             }
-                        ],
-                    }
-                )
+                        }
+                    ],
+                }
+            )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionFini(self):
