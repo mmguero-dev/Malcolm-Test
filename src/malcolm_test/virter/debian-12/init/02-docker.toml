@@ -1,0 +1,31 @@
+version = 1
+
+[[steps]]
+[steps.shell]
+script = '''
+if ! dpkg -s docker-ce &>/dev/null; then
+    sudo mkdir -p /usr/share/keyrings
+
+    curl -sSL "https://download.docker.com/linux/debian/gpg" | \
+        gpg --dearmor | \
+        sudo tee /usr/share/keyrings/docker-archive-keyring.gpg >/dev/null
+
+    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null <<'EOT'
+deb [signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian bookworm stable
+EOT
+
+    sudo apt-get -y -q update
+    sudo apt-get -y -q --no-install-recommends install \
+        docker-ce \
+        docker-compose-plugin
+
+    (cat /etc/docker/daemon.json 2>/dev/null || echo '{}') | jq '. + { "features": { "buildkit": true } }' | sudo sponge /etc/docker/daemon.json
+    ( sudo systemctl daemon-reload && sudo systemctl restart docker ) || true
+
+else
+    echo "docker is already installed"
+fi
+
+sudo ln -s -r -f /usr/libexec/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
+sudo usermod -a -G docker "$USER"
+'''
