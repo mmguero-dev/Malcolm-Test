@@ -490,33 +490,32 @@ class MalcolmVM(object):
 
             # if we're in a build mode, we need to "tag" our final build
             if self.buildMode and self.buildNameCur:
-                if self.containerImageFile:
-                    self.ProvisionTOML(
-                        data={
-                            'version': 1,
-                            'steps': [
-                                {
-                                    'shell': {
-                                        'script': '''
-                                            echo "Image provisioned"
-                                        '''
-                                    }
+                self.ProvisionTOML(
+                    data={
+                        'version': 1,
+                        'steps': [
+                            {
+                                'shell': {
+                                    'script': '''
+                                        echo "Image provisioned"
+                                    '''
                                 }
-                            ],
-                        },
-                        continueThroughShutdown=True,
-                        tolerateFailure=True,
-                        overrideBuildName=self.vmBuildName,
-                    )
-                    if not self.vmBuildKeepLayers and self.buildNamePre:
-                        for layer in self.buildNamePre:
-                            if layer not in [self.vmBuildName, self.vmImage]:
-                                tmpCode, tmpOut = mmguero.RunProcess(
-                                    ['virter', 'image', 'rm', layer],
-                                    env=self.osEnv,
-                                    debug=self.debug,
-                                    logger=self.logger,
-                                )
+                            }
+                        ],
+                    },
+                    continueThroughShutdown=True,
+                    tolerateFailure=True,
+                    overrideBuildName=self.vmBuildName,
+                )
+                if not self.vmBuildKeepLayers and self.buildNamePre:
+                    for layer in self.buildNamePre:
+                        if layer not in [self.vmBuildName, self.vmImage]:
+                            tmpCode, tmpOut = mmguero.RunProcess(
+                                ['virter', 'image', 'rm', layer],
+                                env=self.osEnv,
+                                debug=self.debug,
+                                logger=self.logger,
+                            )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def WaitForShutdown(self):
