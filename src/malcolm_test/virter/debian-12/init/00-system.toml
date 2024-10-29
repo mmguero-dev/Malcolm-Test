@@ -11,14 +11,88 @@ sudo sed -i 's/^\(GRUB_CMDLINE_LINUX=\).*/\1"elevator=deadline systemd.unified_c
 sudo update-grub2
 
 if [[ -r /etc/sysctl.conf ]]; then
-
+    if ! grep -q dmesg_restrict /etc/sysctl.conf; then
+        sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
+# allow dmg reading
+kernel.dmesg_restrict=0
+EOT
+    fi
+    if ! grep -q file-max /etc/sysctl.conf; then
+        sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
+# the maximum number of open file handles
+fs.file-max=518144
+EOT
+    fi
+    if ! grep -q max_user_watches /etc/sysctl.conf; then
+        sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
+# the maximum number of user inotify watches
+fs.inotify.max_user_watches=131072
+EOT
+    fi
+    if ! grep -q max_queued_events /etc/sysctl.conf; then
+        sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
+# how many inotify filesystem events will be held in the kernel queue if the application does not read them
+fs.inotify.max_queued_events=131072
+EOT
+    fi
+    if ! grep -q max_user_instances /etc/sysctl.conf; then
+        sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
+# limits (roughly) how many applications can watch files (per user)
+fs.inotify.max_user_instances=512
+EOT
+    fi
+    if ! grep -q max_map_count /etc/sysctl.conf; then
+        sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
+# the maximum number of memory map areas a process may have
+vm.max_map_count=262144
+EOT
+    fi
+    if ! grep -q swappiness /etc/sysctl.conf; then
+        sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
+# decrease "swappiness" (swapping out runtime memory vs. dropping pages)
+vm.swappiness=1
+EOT
+    fi
+    if ! grep -q dirty_background_ratio /etc/sysctl.conf; then
+        sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
+# the % of system memory fillable with "dirty" pages before flushing
+vm.dirty_background_ratio=40
+EOT
+    fi
+    if ! grep -q dirty_ratio /etc/sysctl.conf; then
+        sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
+# maximum % of dirty system memory before committing everything
+vm.dirty_ratio=80
+EOT
+    fi
+    if ! grep -q tcp_retries2 /etc/sysctl.conf; then
+        sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
+# maximum number of TCP retransmissions
+net.ipv4.tcp_retries2=5
+EOT
+    fi
+    if ! grep -q somaxconn /etc/sysctl.conf; then
+        sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
+# the maximum number of incoming connections
+net.core.somaxconn=65535
+# network buffer sizes
+net.core.netdev_max_backlog=250000
+net.core.optmem_max=33554432
+net.core.rmem_default=425984
+net.core.rmem_max=33554432
+net.core.wmem_default=425984
+net.core.wmem_max=33554432
+net.ipv4.tcp_rmem=10240 425984 33554432
+net.ipv4.tcp_wmem=10240 425984 33554432
+net.ipv4.udp_mem=10240 425984 33554432
+EOT
+    fi
     if ! grep -q unprivileged_userns_clone /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
 # allow unprivileged user namespaces
 kernel.unprivileged_userns_clone=1
 EOT
     fi
-
     if ! grep -q ip_unprivileged_port_start /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
 # allow lower unprivileged port bind
@@ -27,19 +101,108 @@ EOT
     fi
 
 elif [[ -d /etc/sysctl.d/ ]]; then
+    if ! grep -q dmesg_restrict /etc/sysctl.d/*; then
+        sudo tee -a /etc/sysctl.d/80_dmesg_restrict.conf > /dev/null <<'EOT'
+# allow dmg reading
+kernel.dmesg_restrict=0
+EOT
+    fi
+    if ! grep -q file-max /etc/sysctl.d/*; then
+        sudo tee -a /etc/sysctl.d/80_file_max.conf > /dev/null <<'EOT'
+# the maximum number of open file handles
+fs.file-max=518144
+EOT
+    fi
+    if ! grep -q max_user_watches /etc/sysctl.d/*; then
+        sudo tee -a /etc/sysctl.d/80_max_user_watches.conf > /dev/null <<'EOT'
+# the maximum number of user inotify watches
+fs.inotify.max_user_watches=131072
+EOT
+    fi
+    if ! grep -q max_queued_events /etc/sysctl.d/*; then
+        sudo tee -a /etc/sysctl.d/80_max_queued_events.conf > /dev/null <<'EOT'
+# how many inotify filesystem events will be held in the kernel queue if the application does not read them
+fs.inotify.max_queued_events=131072
+EOT
+    fi
+    if ! grep -q max_user_instances /etc/sysctl.d/*; then
+        sudo tee -a /etc/sysctl.d/80_max_user_instances.conf > /dev/null <<'EOT'
+# limits (roughly) how many applications can watch files (per user)
+fs.inotify.max_user_instances=512
+EOT
+    fi
+    if ! grep -q max_map_count /etc/sysctl.d/*; then
+        sudo tee -a /etc/sysctl.d/80_max_map_count.conf > /dev/null <<'EOT'
+# the maximum number of memory map areas a process may have
+vm.max_map_count=262144
+EOT
+    fi
+    if ! grep -q swappiness /etc/sysctl.d/*; then
+        sudo tee -a /etc/sysctl.d/80_swappiness.conf > /dev/null <<'EOT'
+# decrease "swappiness" (swapping out runtime memory vs. dropping pages)
+vm.swappiness=1
+EOT
+    fi
+    if ! grep -q dirty_background_ratio /etc/sysctl.d/*; then
+        sudo tee -a /etc/sysctl.d/80_dirty_background_ratio.conf > /dev/null <<'EOT'
+# the % of system memory fillable with "dirty" pages before flushing
+vm.dirty_background_ratio=40
+EOT
+    fi
+    if ! grep -q dirty_ratio /etc/sysctl.d/*; then
+        sudo tee -a /etc/sysctl.d/80_dirty_ratio.conf > /dev/null <<'EOT'
+# maximum % of dirty system memory before committing everything
+vm.dirty_ratio=80
+EOT
+    fi
+    if ! grep -q tcp_retries2 /etc/sysctl.d/*; then
+        sudo tee -a /etc/sysctl.d/80_tcp_retries2.conf > /dev/null <<'EOT'
+# maximum number of TCP retransmissions
+net.ipv4.tcp_retries2=5
+EOT
+    fi
+    if ! grep -q somaxconn /etc/sysctl.d/*; then
+        sudo tee -a /etc/sysctl.d/80_somaxconn.conf > /dev/null <<'EOT'
+# the maximum number of incoming connections
+net.core.somaxconn=65535
+# network buffer sizes
+net.core.netdev_max_backlog=250000
+net.core.optmem_max=33554432
+net.core.rmem_default=425984
+net.core.rmem_max=33554432
+net.core.wmem_default=425984
+net.core.wmem_max=33554432
+net.ipv4.tcp_rmem=10240 425984 33554432
+net.ipv4.tcp_wmem=10240 425984 33554432
+net.ipv4.udp_mem=10240 425984 33554432
+EOT
+    fi
     if ! grep -q unprivileged_userns_clone /etc/sysctl.d/*; then
-        sudo tee -a /etc/sysctl.d/80_userns.conf > /dev/null <<'EOT'
+        sudo tee -a /etc/sysctl.d/80_unprivileged_userns_clone.conf > /dev/null <<'EOT'
 # allow unprivileged user namespaces
 kernel.unprivileged_userns_clone=1
 EOT
     fi
     if ! grep -q ip_unprivileged_port_start /etc/sysctl.d/*; then
-        sudo tee -a /etc/sysctl.d/80_lowport.conf > /dev/null <<'EOT'
+        sudo tee -a /etc/sysctl.d/80_ip_unprivileged_port_start.conf > /dev/null <<'EOT'
 # allow lower unprivileged port bind
 net.ipv4.ip_unprivileged_port_start=80
 EOT
     fi
 fi
+
+if [[ ! -f /etc/security/limits.d/limits.conf ]]; then
+    sudo tee /etc/security/limits.d/limits.conf > /dev/null <<'EOT'
+* soft nofile 65535
+* hard nofile 65535
+* soft memlock unlimited
+* hard memlock unlimited
+* soft nproc 262144
+* hard nproc 524288
+* soft core 0
+* hard core 0
+EOT
+fi # limits.conf check
 
 sudo mkdir -p /etc/modprobe.d
 echo "options overlay permit_mounts_in_userns=1 metacopy=off redirect_dir=off" | sudo tee /etc/modprobe.d/overlay.conf
