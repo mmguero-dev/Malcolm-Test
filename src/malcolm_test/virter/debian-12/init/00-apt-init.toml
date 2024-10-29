@@ -6,6 +6,7 @@ script = '''
 echo "Installing system packages..."
 sudo apt-get -y -q update
 sudo apt-get -y -q --no-install-recommends install \
+    apt-transport-https \
     bash \
     bat \
     bc \
@@ -21,6 +22,7 @@ sudo apt-get -y -q --no-install-recommends install \
     gawk \
     git \
     gpg \
+    gnupg2 \
     iproute2 \
     iputils-ping \
     jq \

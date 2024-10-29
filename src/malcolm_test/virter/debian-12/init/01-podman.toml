@@ -1,0 +1,116 @@
+version = 1
+
+[[steps]]
+[steps.shell]
+script = '''
+sudo mkdir -p /usr/share/keyrings
+
+curl -sSL "https://build.opensuse.org/projects/home:alvistack/signing_keys/download?kind=gpg" | \
+    gpg --dearmor | \
+    sudo tee /usr/share/keyrings/home_alvistack.gpg >/dev/null
+
+sudo tee /etc/apt/sources.list.d/alvistack.list > /dev/null <<'EOT'
+deb [signed-by=/usr/share/keyrings/home_alvistack.gpg] https://ftp.gwdg.de/pub/opensuse/repositories/home:/alvistack/Debian_12/ /
+EOT
+
+sudo tee /etc/apt/preferences.d/99-alvistack > /dev/null <<'EOT'
+Package: *
+Pin: origin ftp.gwdg.de
+Pin-Priority: 1
+
+Package: buildah catatonit conmon containernetworking containernetworking-plugins containers-common cri-o-runc crun libcharon-standard-plugins libslirp0 passt podman podman-aardvark-dns podman-netavark slirp4netns
+Pin: origin ftp.gwdg.de
+Pin-Priority: 500
+EOT
+
+sudo apt-get -y -q update
+sudo apt-get -y -q --no-install-recommends install \
+    buildah \
+    catatonit \
+    crun \
+    fuse-overlayfs \
+    passt \
+    podman \
+    podman-aardvark-dns \
+    podman-netavark \
+    slirp4netns \
+    uidmap
+
+sudo sed -i 's/^\(GRUB_CMDLINE_LINUX=\).*/\1"elevator=deadline systemd.unified_cgroup_hierarchy=1 cgroup_enable=memory swapaccount=1 cgroup.memory=nokmem random.trust_cpu=on"/' /etc/default/grub
+sudo update-grub2
+
+if [[ -r /etc/sysctl.conf ]]; then
+
+    if ! grep -q unprivileged_userns_clone /etc/sysctl.conf; then
+        sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
+# allow unprivileged user namespaces
+kernel.unprivileged_userns_clone=1
+EOT
+    fi
+
+    if ! grep -q ip_unprivileged_port_start /etc/sysctl.conf; then
+        sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
+# allow lower unprivileged port bind
+net.ipv4.ip_unprivileged_port_start=80
+EOT
+    fi
+
+elif [[ -d /etc/sysctl.d/ ]]; then
+    if ! grep -q unprivileged_userns_clone /etc/sysctl.d/*; then
+        sudo tee -a /etc/sysctl.d/80_userns.conf > /dev/null <<'EOT'
+# allow unprivileged user namespaces
+kernel.unprivileged_userns_clone=1
+EOT
+    fi
+    if ! grep -q ip_unprivileged_port_start /etc/sysctl.d/*; then
+        sudo tee -a /etc/sysctl.d/80_lowport.conf > /dev/null <<'EOT'
+# allow lower unprivileged port bind
+net.ipv4.ip_unprivileged_port_start=80
+EOT
+    fi
+fi
+
+sudo mkdir -p /etc/modprobe.d
+echo "options overlay permit_mounts_in_userns=1 metacopy=off redirect_dir=off" | sudo tee /etc/modprobe.d/podman.conf
+
+if [[ -d /etc/systemd/system ]]; then
+    sudo mkdir -p /etc/systemd/system/user@.service.d
+    echo -e "[Service]\\nDelegate=cpu cpuset io memory pids" | sudo tee /etc/systemd/system/user@.service.d/delegate.conf
+fi
+
+sudo touch /etc/subuid
+sudo touch /etc/subgid
+if ! grep --quiet "$USER" /etc/subuid; then
+  sudo usermod --add-subuids 200000-265535 "$USER"
+fi
+if ! grep --quiet "$USER" /etc/subgid; then
+  sudo usermod --add-subgids 200000-265535 "$USER"
+fi
+
+sudo loginctl enable-linger "$USER" &>/dev/null || true
+sudo usermod -a -G systemd-journal "$USER" &>/dev/null || true
+systemctl --user enable podman.service &>/dev/null || true
+systemctl --user start podman.service &>/dev/null || true
+
+mkdir -p "$HOME"/.config/containers
+tee "$HOME"/.config/containers/containers.conf > /dev/null <<'EOT'
+[engine]
+
+runtime="crun"
+compose_warning_logs=false
+
+[containers]
+
+default_ulimits = [
+  "memlock=9223372036854775807:9223372036854775807",
+  "nofile=65535:65535",
+  "nproc=262143:524287"
+]
+
+[network]
+
+default_subnet_pools = [
+  {"base" = "172.27.0.0/16", "size" = 24},
+]
+EOT
+'''

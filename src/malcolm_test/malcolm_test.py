@@ -439,7 +439,7 @@ class MalcolmVM(object):
                     )
 
             # now execute provisioning from the "malcolm init" directory
-            if os.path.isdir(self.vmTomlMalcolmInitPath):
+            if self.vmProvisionMalcolm and os.path.isdir(self.vmTomlMalcolmInitPath):
                 for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmInitPath, '*.toml'))):
                     self.ProvisionFile(provisionFile)
 
@@ -476,10 +476,10 @@ class MalcolmVM(object):
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionFini(self):
-        if self.vmProvision and os.path.isdir(self.vmProvisionPath):
+        if (self.vmProvision or self.vmBuildName) and os.path.isdir(self.vmProvisionPath):
 
             # now execute provisioning from the "malcolm fini" directory
-            if os.path.isdir(self.vmTomlMalcolmFiniPath):
+            if self.vmProvisionMalcolm and os.path.isdir(self.vmTomlMalcolmFiniPath):
                 for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmFiniPath, '*.toml'))):
                     self.ProvisionFile(provisionFile, continueThroughShutdown=True, tolerateFailure=True)
 
@@ -490,33 +490,32 @@ class MalcolmVM(object):
 
             # if we're in a build mode, we need to "tag" our final build
             if self.buildMode and self.buildNameCur:
-                if self.containerImageFile:
-                    self.ProvisionTOML(
-                        data={
-                            'version': 1,
-                            'steps': [
-                                {
-                                    'shell': {
-                                        'script': '''
-                                            echo "Image provisioned"
-                                        '''
-                                    }
+                self.ProvisionTOML(
+                    data={
+                        'version': 1,
+                        'steps': [
+                            {
+                                'shell': {
+                                    'script': '''
+                                        echo "Image provisioned"
+                                    '''
                                 }
-                            ],
-                        },
-                        continueThroughShutdown=True,
-                        tolerateFailure=True,
-                        overrideBuildName=self.vmBuildName,
-                    )
-                    if not self.vmBuildKeepLayers and self.buildNamePre:
-                        for layer in self.buildNamePre:
-                            if layer not in [self.vmBuildName, self.vmImage]:
-                                tmpCode, tmpOut = mmguero.RunProcess(
-                                    ['virter', 'image', 'rm', layer],
-                                    env=self.osEnv,
-                                    debug=self.debug,
-                                    logger=self.logger,
-                                )
+                            }
+                        ],
+                    },
+                    continueThroughShutdown=True,
+                    tolerateFailure=True,
+                    overrideBuildName=self.vmBuildName,
+                )
+                if not self.vmBuildKeepLayers and self.buildNamePre:
+                    for layer in self.buildNamePre:
+                        if layer not in [self.vmBuildName, self.vmImage]:
+                            tmpCode, tmpOut = mmguero.RunProcess(
+                                ['virter', 'image', 'rm', layer],
+                                env=self.osEnv,
+                                debug=self.debug,
+                                logger=self.logger,
+                            )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def WaitForShutdown(self):
@@ -675,6 +674,16 @@ def main():
         const=True,
         default=True,
         help=f'Perform VM provisioning',
+    )
+    vmSpecsArgGroup.add_argument(
+        '--vm-provision-malcolm',
+        dest='vmProvisionMalcolm',
+        type=mmguero.str2bool,
+        nargs='?',
+        metavar="true|false",
+        const=True,
+        default=True,
+        help=f'Perform VM provisioning (Malcolm-specific)',
     )
     vmSpecsArgGroup.add_argument(
         '--vm-provision-path',
