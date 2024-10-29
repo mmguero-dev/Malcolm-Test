@@ -6,7 +6,7 @@ script = '''
 if ! dpkg -s docker-ce &>/dev/null; then
     sudo mkdir -p /usr/share/keyrings
 
-    curl -sSL "https://download.docker.com/linux/debian/gpg|/usr/share/keyrings/docker-archive-keyring.gpg" | \
+    curl -sSL "https://download.docker.com/linux/debian/gpg" | \
         gpg --dearmor | \
         sudo tee /usr/share/keyrings/docker-archive-keyring.gpg >/dev/null
 
