@@ -7,8 +7,10 @@ echo "Configuring system parameters..."
 
 sudo rm -f /etc/motd
 
-sudo sed -i 's/^\(GRUB_CMDLINE_LINUX=\).*/\1"elevator=deadline systemd.unified_cgroup_hierarchy=1 cgroup_enable=memory swapaccount=1 cgroup.memory=nokmem random.trust_cpu=on"/' /etc/default/grub
-sudo update-grub2
+if ! grep -q unified_cgroup_hierarchy /etc/default/grub; then
+    sudo sed -i 's/^\(GRUB_CMDLINE_LINUX=\).*/\1"elevator=deadline systemd.unified_cgroup_hierarchy=1 cgroup_enable=memory swapaccount=1 cgroup.memory=nokmem random.trust_cpu=on"/' /etc/default/grub
+    sudo update-grub2
+fi
 
 if [[ -r /etc/sysctl.conf ]]; then
     if ! grep -q dmesg_restrict /etc/sysctl.conf; then
@@ -204,10 +206,12 @@ if [[ ! -f /etc/security/limits.d/limits.conf ]]; then
 EOT
 fi # limits.conf check
 
-sudo mkdir -p /etc/modprobe.d
-echo "options overlay permit_mounts_in_userns=1 metacopy=off redirect_dir=off" | sudo tee /etc/modprobe.d/overlay.conf
+if [[ ! -f /etc/modprobe.d/overlay.conf ]]; then
+    sudo mkdir -p /etc/modprobe.d
+    echo "options overlay permit_mounts_in_userns=1 metacopy=off redirect_dir=off" | sudo tee /etc/modprobe.d/overlay.conf
+fi
 
-if [[ -d /etc/systemd/system ]]; then
+if [[ -d /etc/systemd/system ]] && [[ ! -f /etc/systemd/system/user@.service.d/delegate.conf ]]; then
     sudo mkdir -p /etc/systemd/system/user@.service.d
     echo -e "[Service]\\nDelegate=cpu cpuset io memory pids" | sudo tee /etc/systemd/system/user@.service.d/delegate.conf
 fi
