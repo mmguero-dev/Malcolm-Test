@@ -331,6 +331,17 @@ class MalcolmVM(object):
                     logger=self.logger,
                 )
 
+            if code != 0:
+                debugInfo = dict()
+                debugInfo['code'] = code
+                debugInfo['response'] = out
+                try:
+                    with open(provisionFile, "rb") as f:
+                        debugInfo['request'] = tomli.load(f)
+                except:
+                    pass
+                self.logger.error(json.dumps(debugInfo))
+
             if (code == 0) or (tolerateFailure == True):
                 code = 0
                 self.PrintVirterLogOutput(out)
