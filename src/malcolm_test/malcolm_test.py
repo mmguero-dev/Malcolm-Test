@@ -255,6 +255,7 @@ class MalcolmVM(object):
 
         if exitCode == 0:
             self.PrintVirterLogOutput(output)
+            time.sleep(5)
             self.ProvisionInit()
         else:
             raise subprocess.CalledProcessError(exitCode, cmd, output=output)
@@ -348,6 +349,7 @@ class MalcolmVM(object):
             if (code == 0) or (tolerateFailure == True):
                 code = 0
                 self.PrintVirterLogOutput(out)
+                time.sleep(5)
                 if self.buildMode and (skipped == False):
                     self.buildNamePre.append(self.buildNameCur)
             else:
