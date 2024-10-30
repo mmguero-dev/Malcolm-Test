@@ -78,7 +78,6 @@ class MalcolmVM(object):
         self.vmTomlVMFiniPath = os.path.join(self.vmProvisionPath, os.path.join(self.vmImage, 'fini'))
 
         self.osEnv = os.environ.copy()
-        self.osEnv.pop('SSH_AUTH_SOCK', None)
 
         self.provisionEnvArgs = [
             '--set',
