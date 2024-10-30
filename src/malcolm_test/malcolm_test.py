@@ -64,7 +64,6 @@ class MalcolmVM(object):
             setattr(self, key, value)
         self.debug = debug
         self.logger = logger
-        self.id = None
         self.name = None
         self.provisionErrorEncountered = False
 
@@ -222,15 +221,14 @@ class MalcolmVM(object):
 
         elif shuttingDown[0] == False:
             # use virter to execute a virtual machine
-            self.id = 11 + randrange(220)
-            self.name = f"{self.vmNamePrefix}-{self.id}"
+            self.name = f"{self.vmNamePrefix}-{petname.Generate()}"
             cmd = [
                 'virter',
                 'vm',
                 'run',
                 self.vmImage,
                 '--id',
-                self.id,
+                '0',
                 '--name',
                 self.name,
                 '--vcpus',
@@ -255,6 +253,7 @@ class MalcolmVM(object):
 
         if exitCode == 0:
             self.PrintVirterLogOutput(output)
+            time.sleep(5)
             self.ProvisionInit()
         else:
             raise subprocess.CalledProcessError(exitCode, cmd, output=output)
@@ -282,8 +281,7 @@ class MalcolmVM(object):
                 if os.path.basename(provisionFile) == '99-reboot.toml':
                     skipped = True
                 else:
-                    self.id = 120 + randrange(80)
-                    self.name = f"{self.vmNamePrefix}-{self.id}"
+                    self.name = f"{self.vmNamePrefix}-{petname.Generate()}"
                     self.buildNameCur = overrideBuildName if overrideBuildName else petname.Generate()
                     cmd = [
                         'virter',
@@ -292,7 +290,7 @@ class MalcolmVM(object):
                         self.buildNamePre[-1],
                         self.buildNameCur,
                         '--id',
-                        self.id,
+                        '0',
                         '--name',
                         self.name,
                         '--vcpus',
@@ -348,6 +346,7 @@ class MalcolmVM(object):
             if (code == 0) or (tolerateFailure == True):
                 code = 0
                 self.PrintVirterLogOutput(out)
+                time.sleep(5)
                 if self.buildMode and (skipped == False):
                     self.buildNamePre.append(self.buildNameCur)
             else:

@@ -13,6 +13,7 @@ sudo apt-get -y -q --no-install-recommends install \
     bzip2 \
     ca-certificates \
     curl \
+    dbus-user-session \
     detox \
     dialog \
     direnv \
