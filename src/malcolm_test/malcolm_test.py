@@ -219,7 +219,7 @@ class MalcolmVM(object):
                 self.logger.info(f'{self.name} exists as indicated')
                 exitCode = 0
             else:
-                self.logger.info(f'{self.name} does not already exist')
+                self.logger.error(f'{self.name} does not already exist')
 
         elif shuttingDown[0] == False:
             # use virter to execute a virtual machine
@@ -768,7 +768,6 @@ def main():
         args = parser.parse_args()
     except SystemExit as e:
         mmguero.eprint(f'Invalid argument(s): {e}')
-        parser.print_help()
         sys.exit(2)
 
     # configure logging levels based on -v, -vv, -vvv, etc.
