@@ -66,6 +66,7 @@ class MalcolmVM(object):
         self.logger = logger
         self.id = None
         self.name = None
+        self.provisionErrorEncountered = False
 
         self.buildMode = False
         self.buildNameCur = ''
@@ -340,7 +341,10 @@ class MalcolmVM(object):
                         debugInfo['request'] = tomli.load(f)
                 except:
                     pass
-                self.logger.error(json.dumps(debugInfo))
+                if tolerateFailure:
+                    self.logger.warning(json.dumps(debugInfo))
+                else:
+                    self.logger.error(json.dumps(debugInfo))
 
             if (code == 0) or (tolerateFailure == True):
                 code = 0
@@ -348,6 +352,7 @@ class MalcolmVM(object):
                 if self.buildMode and (skipped == False):
                     self.buildNamePre.append(self.buildNameCur)
             else:
+                self.provisionErrorEncountered = True
                 raise subprocess.CalledProcessError(code, cmd, output=out)
 
         else:
@@ -489,35 +494,37 @@ class MalcolmVM(object):
     def ProvisionFini(self):
         if (self.vmProvision or self.vmBuildName) and os.path.isdir(self.vmProvisionPath):
 
-            # now execute provisioning from the "malcolm fini" directory
-            if self.vmProvisionMalcolm and os.path.isdir(self.vmTomlMalcolmFiniPath):
-                for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmFiniPath, '*.toml'))):
-                    self.ProvisionFile(provisionFile, continueThroughShutdown=True, tolerateFailure=True)
+            if not self.provisionErrorEncountered:
+                # now execute provisioning from the "malcolm fini" directory
+                if self.vmProvisionMalcolm and os.path.isdir(self.vmTomlMalcolmFiniPath):
+                    for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmFiniPath, '*.toml'))):
+                        self.ProvisionFile(provisionFile, continueThroughShutdown=True, tolerateFailure=True)
 
-            # finally, execute any provisioning in this image's "fini" directory, if it exists
-            if os.path.isdir(self.vmTomlVMFiniPath):
-                for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlVMFiniPath, '*.toml'))):
-                    self.ProvisionFile(provisionFile, continueThroughShutdown=True, tolerateFailure=True)
+                # finally, execute any provisioning in this image's "fini" directory, if it exists
+                if os.path.isdir(self.vmTomlVMFiniPath):
+                    for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlVMFiniPath, '*.toml'))):
+                        self.ProvisionFile(provisionFile, continueThroughShutdown=True, tolerateFailure=True)
 
             # if we're in a build mode, we need to "tag" our final build
             if self.buildMode and self.buildNameCur:
-                self.ProvisionTOML(
-                    data={
-                        'version': 1,
-                        'steps': [
-                            {
-                                'shell': {
-                                    'script': '''
-                                        echo "Image provisioned"
-                                    '''
+                if not self.provisionErrorEncountered:
+                    self.ProvisionTOML(
+                        data={
+                            'version': 1,
+                            'steps': [
+                                {
+                                    'shell': {
+                                        'script': '''
+                                            echo "Image provisioned"
+                                        '''
+                                    }
                                 }
-                            }
-                        ],
-                    },
-                    continueThroughShutdown=True,
-                    tolerateFailure=True,
-                    overrideBuildName=self.vmBuildName,
-                )
+                            ],
+                        },
+                        continueThroughShutdown=True,
+                        tolerateFailure=True,
+                        overrideBuildName=self.vmBuildName,
+                    )
                 if not self.vmBuildKeepLayers and self.buildNamePre:
                     for layer in self.buildNamePre:
                         if layer not in [self.vmBuildName, self.vmImage]:
