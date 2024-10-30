@@ -1,7 +1,10 @@
-"""malcolm_test"""
+from importlib.metadata import version, PackageNotFoundError
 
-__version__ = "0.0.1"
-__author__ = "Seth Grover <mero.mero.guero@gmail.com>"
-__all__ = []
+try:
+    __version__ = version("malcolm-test")
+except PackageNotFoundError:
+    __version__ = None
 
-from malcolm_test.malcolm_test import *
+__all__ = ["main", "MalcolmVM"]
+
+from .malcolm_test import main, MalcolmVM
