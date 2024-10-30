@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "malcolm-test"
-version = "0.1.0"
+version = "0.2.0"
 authors = [
   { name="Seth Grover", email="mero.mero.guero@gmail.com" },
 ]
@@ -29,7 +29,10 @@ Homepage = "https://github.com/idaholab/malcolm-test"
 Issues = "https://github.com/idaholab/malcolm-test/issues"
 
 [project.scripts]
-malcolm-test = "malcolm_test:main"
+malcolm-test = "maltest:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/maltest"]
 
 [tool.pytest.ini_options]
 pythonpath = "src"

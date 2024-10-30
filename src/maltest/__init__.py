@@ -5,6 +5,6 @@ try:
 except PackageNotFoundError:
     __version__ = None
 
-__all__ = ["main", "MalcolmVM"]
+__all__ = ["main"]
 
-from .malcolm_test import main, MalcolmVM
+from .maltest import main
