@@ -11,16 +11,16 @@ if ! dpkg -s podman &>/dev/null; then
       sudo tee /usr/share/keyrings/home_alvistack.gpg >/dev/null
 
   sudo tee /etc/apt/sources.list.d/alvistack.list > /dev/null <<'EOT'
-deb [signed-by=/usr/share/keyrings/home_alvistack.gpg] https://ftp.gwdg.de/pub/opensuse/repositories/home:/alvistack/Debian_12/ /
+deb [signed-by=/usr/share/keyrings/home_alvistack.gpg] http://mirror.aardsoft.fi/opensuse/repositories/home:/alvistack/Debian_12/ /
 EOT
 
   sudo tee /etc/apt/preferences.d/99-alvistack > /dev/null <<'EOT'
 Package: *
-Pin: origin ftp.gwdg.de
+Pin: origin mirror.aardsoft.fi
 Pin-Priority: 1
 
 Package: buildah catatonit conmon containernetworking containernetworking-plugins containers-common cri-o-runc crun libcharon-standard-plugins libslirp0 passt podman podman-aardvark-dns podman-netavark slirp4netns
-Pin: origin ftp.gwdg.de
+Pin: origin mirror.aardsoft.fi
 Pin-Priority: 500
 EOT
 
@@ -39,6 +39,9 @@ EOT
 
   systemctl --user enable podman.service &>/dev/null || true
   systemctl --user start podman.service &>/dev/null || true
+
+  # we don't want podman to always set DOCKER_HOST and take over, we may be running either one
+  sudo rm -f /etc/profile.d/podman-docker.*
 
   mkdir -p "$HOME"/.config/containers
   tee "$HOME"/.config/containers/containers.conf > /dev/null <<'EOT'
