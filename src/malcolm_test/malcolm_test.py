@@ -223,7 +223,7 @@ class MalcolmVM(object):
 
         elif shuttingDown[0] == False:
             # use virter to execute a virtual machine
-            self.id = 120 + randrange(80)
+            self.id = 11 + randrange(220)
             self.name = f"{self.vmNamePrefix}-{self.id}"
             cmd = [
                 'virter',
