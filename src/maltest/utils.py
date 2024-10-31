@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import ast
 import glob
 import json
 import mmguero
@@ -20,6 +21,8 @@ from collections import defaultdict
 ShuttingDown = [False]
 
 MalcolmVmInfo = None
+
+UPLOAD_ARTIFACT_LIST_NAME = 'UPLOAD_ARTIFACTS'
 
 urllib3.disable_warnings()
 warnings.filterwarnings(
@@ -51,6 +54,41 @@ def parse_virter_log_line(log_line):
             log_dict[key] = value
 
     return log_dict
+
+
+###################################################################################################
+class MalcolmTestCollection(object):
+    def __init__(
+        self,
+        logger=None,
+    ):
+        self.logger = logger
+        self.collected = set()
+
+    def pytest_collection_modifyitems(self, items):
+        for item in items:
+            self.collected.add(str(item.reportinfo()[0]))
+
+    def PCAPsReferenced(self):
+        result = list()
+        for testPyPath in self.collected:
+            try:
+                with open(testPyPath, "r") as f:
+                    testPyContent = f.read()
+                for node in ast.walk(ast.parse(testPyContent)):
+                    if isinstance(node, ast.Assign):
+                        for target in node.targets:
+                            if isinstance(target, ast.Name) and (target.id == UPLOAD_ARTIFACT_LIST_NAME):
+                                result.append(ast.literal_eval(node.value))
+            except FileNotFoundError:
+                self.logger.error(f"Error: '{testPyPath}' not found")
+            except SyntaxError:
+                self.logger.error(f"Error: '{testPyPath}' has invalid syntax")
+            except ValueError as ve:
+                self.logger.error(f"Error: Unable to evaulate '{variable_name}' in '{testPyPath}': {ve}")
+            except Exception as e:
+                self.logger.error(f"Error: '{testPyPath}': {e}")
+        return set(mmguero.Flatten(result))
 
 
 ###################################################################################################

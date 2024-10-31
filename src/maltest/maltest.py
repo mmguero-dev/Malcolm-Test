@@ -12,7 +12,7 @@ import pytest
 import signal
 import sys
 
-from maltest.utils import MalcolmVM, ShuttingDown, set_malcolm_vm_info
+from maltest.utils import MalcolmVM, MalcolmTestCollection, ShuttingDown, set_malcolm_vm_info
 
 ###################################################################################################
 script_name = os.path.basename(__file__)
@@ -294,6 +294,17 @@ def main():
             logging.info(json.dumps(malcolmInfo))
             set_malcolm_vm_info(malcolmInfo)
             if args.runTests and os.path.isdir(args.testPath):
+                testSetPreExec = MalcolmTestCollection(logger=logging)
+                pytest.main(
+                    list(mmguero.Flatten(['--collect-only', '-p', 'no:terminal', args.testPath, extraArgs])),
+                    plugins=[testSetPreExec],
+                )
+                if testSetPreExec.collected:
+                    logging.debug(
+                        json.dumps(
+                            {'tests': list(testSetPreExec.collected), 'pcaps': list(testSetPreExec.PCAPsReferenced())}
+                        )
+                    )
                 exitCode = pytest.main(list(mmguero.Flatten(['-p', 'no:cacheprovider', args.testPath, extraArgs])))
             malcolmVm.WaitForShutdown()
     finally:
