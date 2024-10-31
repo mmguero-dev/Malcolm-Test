@@ -1,0 +1,1 @@
+This directory is for distribution-specific (Debian 12) [virter provisioning](https://github.com/LINBIT/virter/blob/master/doc/provisioning.md) TOML files used to set up the OS prior to configuring Malcolm.
