@@ -3,13 +3,13 @@ version = 1
 [env]
 VERBOSE = "false"
 
-# username: analyst
+# username: maltest
 # password: M@lc0lm
-AUTH_USERNAME = 'analyst'
+AUTH_USERNAME = 'maltest'
 # openssl passwd -1
-AUTH_PASSWORD_OPENSSL = '$1$owXoS5pf$YesZKhhWS0d3zVUUhdcef0'
+AUTH_PASSWORD_OPENSSL = '$1$eL6r6.9S$6cRYiBNnOPd1fZZG3Z50P0'
 # htpasswd -n -B username | cut -d: -f2
-AUTH_PASSWORD_HTPASSWD = '$2y$05$a8jiJsLZ1mFnt5srJD3HAOKC8IUaZcOlsqp8txBlmMjW6wUXUtN3S'
+AUTH_PASSWORD_HTPASSWD = '$2y$05$PMhfXVcC.8ztE5yx/IJV9ud59XcwZI7/1Z3mW2QRvs5DMz61G0ynS'
 
 [[steps]]
 [steps.shell]

@@ -111,7 +111,7 @@ class MalcolmVM(object):
         #   for that value (openssl and htpasswd versions) and set them as
         #   AUTH_PASSWORD_OPENSSL and AUTH_PASSWORD_HTPASSWD, respectively.
         # These are the defaults set in 02-auth-setup.toml, don't be stupid and use them in production.
-        self.malcolmUsername = self.osEnv.get('MALCOLM_AUTH_USERNAME', 'analyst')
+        self.malcolmUsername = self.osEnv.get('MALCOLM_AUTH_USERNAME', 'maltest')
         self.provisionEnvArgs.extend(
             [
                 '--set',
