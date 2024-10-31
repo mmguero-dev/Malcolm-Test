@@ -97,6 +97,7 @@ class MalcolmVM(object):
                 'MALCOLM_REPO_BRANCH',
                 'MALCOLM_TEST_PATH',
                 'MALCOLM_AUTH_PASSWORD',
+                'MALCOLM_AUTH_USERNAME',
             )
         ]:
             self.provisionEnvArgs.extend(
@@ -108,41 +109,48 @@ class MalcolmVM(object):
 
         # MALCOLM_AUTH_PASSWORD is a special case: we need to create the appropriate hashes
         #   for that value (openssl and htpasswd versions) and set them as
-        #   AUTH_PASSWORD_OPENSSL and AUTH_PASSWORD_HTPASSWD, respectively
-        if authPasswordUnhashed := self.osEnv.get('MALCOLM_AUTH_PASSWORD', ''):
-            err, out = mmguero.RunProcess(
-                ['openssl', 'passwd', '-quiet', '-stdin', '-1'],
-                stdout=True,
-                stderr=False,
-                stdin=authPasswordUnhashed,
-                env=self.osEnv,
-                debug=self.debug,
-                logger=self.logger,
+        #   AUTH_PASSWORD_OPENSSL and AUTH_PASSWORD_HTPASSWD, respectively.
+        # These are the defaults set in 02-auth-setup.toml, don't be stupid and use them in production.
+        self.malcolmUsername = self.osEnv.get('MALCOLM_AUTH_USERNAME', 'analyst')
+        self.provisionEnvArgs.extend(
+            [
+                '--set',
+                f"env.AUTH_USERNAME={self.malcolmUsername}",
+            ]
+        )
+        self.malcolmPassword = self.osEnv.get('MALCOLM_AUTH_PASSWORD', 'M@lc0lm')
+        err, out = mmguero.RunProcess(
+            ['openssl', 'passwd', '-quiet', '-stdin', '-1'],
+            stdout=True,
+            stderr=False,
+            stdin=self.malcolmPassword,
+            env=self.osEnv,
+            debug=self.debug,
+            logger=self.logger,
+        )
+        if (err == 0) and (len(out) > 0):
+            self.provisionEnvArgs.extend(
+                [
+                    '--set',
+                    f"env.AUTH_PASSWORD_OPENSSL={out[0]}",
+                ]
             )
-            if (err == 0) and (len(out) > 0):
-                self.provisionEnvArgs.extend(
-                    [
-                        '--set',
-                        f"env.AUTH_PASSWORD_OPENSSL={out[0]}",
-                    ]
-                )
-            err, out = mmguero.RunProcess(
-                ['htpasswd', '-i', '-n', '-B', self.osEnv.get('MALCOLM_AUTH_USERNAME', 'analyst')],
-                stdout=True,
-                stderr=False,
-                stdin=authPasswordUnhashed,
-                env=self.osEnv,
-                debug=self.debug,
-                logger=self.logger,
+        err, out = mmguero.RunProcess(
+            ['htpasswd', '-i', '-n', '-B', self.malcolmUsername],
+            stdout=True,
+            stderr=False,
+            stdin=self.malcolmPassword,
+            env=self.osEnv,
+            debug=self.debug,
+            logger=self.logger,
+        )
+        if (err == 0) and (len(out) > 0) and (pwVals := out[0].split(':')) and (len(pwVals) >= 2):
+            self.provisionEnvArgs.extend(
+                [
+                    '--set',
+                    f"env.AUTH_PASSWORD_HTPASSWD={pwVals[1]}",
+                ]
             )
-            if (err == 0) and (len(out) > 0) and (pwVals := out[0].split(':')) and (len(pwVals) >= 2):
-
-                self.provisionEnvArgs.extend(
-                    [
-                        '--set',
-                        f"env.AUTH_PASSWORD_HTPASSWD={pwVals[1]}",
-                    ]
-                )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def __del__(self):
@@ -187,6 +195,8 @@ class MalcolmVM(object):
     # }
     def Info(self):
         result = {}
+        result['username'] = self.malcolmUsername
+        result['password'] = self.malcolmPassword
         # list the VMs so we can figure out the host network name of this one
         exitCode, output = mmguero.RunProcess(
             ['virter', 'vm', 'list'],
