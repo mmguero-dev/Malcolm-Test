@@ -12,7 +12,13 @@ import pytest
 import signal
 import sys
 
-from maltest.utils import MalcolmVM, MalcolmTestCollection, ShuttingDown, set_malcolm_vm_info
+from maltest.utils import (
+    MalcolmVM,
+    MalcolmTestCollection,
+    ShuttingDown,
+    set_malcolm_vm_info,
+    shakey_file_hash,
+)
 
 ###################################################################################################
 script_name = os.path.basename(__file__)
@@ -321,9 +327,13 @@ def main():
                     for pcapFile in pcaps:
                         # TODO: would it be better to use SFTP for this? or even the upload interface?
                         # TODO: Assuming the Malcolm directory like this might not be very robust
-                        malcolmVm.CopyFile(
-                            pcapFile, f'/home/{args.vmImageUsername}/Malcolm/pcap/upload/', tolerateFailure=True
-                        )
+                        pcapFileParts = os.path.splitext(pcapFile)
+                        if pcapHash := shakey_file_hash(pcapFile):
+                            malcolmVm.CopyFile(
+                                pcapFile,
+                                f'/home/{args.vmImageUsername}/Malcolm/pcap/upload/{pcapHash}{pcapFileParts[1]}',
+                                tolerateFailure=True,
+                            )
 
                 # TODO: wait until all data has been processed (no new documents are being indexed for X amount of time)
 

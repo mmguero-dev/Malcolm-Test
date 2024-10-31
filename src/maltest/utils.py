@@ -2,6 +2,7 @@
 
 import ast
 import glob
+import hashlib
 import json
 import mmguero
 import os
@@ -29,6 +30,15 @@ warnings.filterwarnings(
     "ignore",
     message="Unverified HTTPS request",
 )
+
+
+###################################################################################################
+def shakey_file_hash(filename, digest_len=8):
+    try:
+        with open(filename, 'rb', buffering=0) as f:
+            return hashlib.file_digest(f, 'shake_256').hexdigest(digest_len)
+    except:
+        return None
 
 
 ###################################################################################################
