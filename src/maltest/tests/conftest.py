@@ -13,12 +13,13 @@ def malcolm_vm_info():
 @pytest.fixture
 def malcolm_http_auth():
     if info := get_malcolm_vm_info():
-        yield HTTPBasicAuth(
-            info.get('password', ''),
+        auth = HTTPBasicAuth(
             info.get('username', ''),
+            info.get('password', ''),
         )
+        yield auth
     else:
-        yield HTTPBasicAuth('', '')
+        yield None
 
 
 @pytest.fixture
