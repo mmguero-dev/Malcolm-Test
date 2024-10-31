@@ -280,6 +280,7 @@ def main():
     signal.signal(signal.SIGINT, shutdown_handler)
     signal.signal(signal.SIGTERM, shutdown_handler)
 
+    # pass "args" into the constructor of our Malcolm VM object for its parameters
     malcolmVm = MalcolmVM(
         args=args,
         debug=(args.verbose <= logging.DEBUG),
@@ -287,26 +288,52 @@ def main():
     )
     try:
         if args.vmBuildName:
+            # use "virter image build" to build a VM for later use
             exitCode = malcolmVm.Build()
+
         else:
+            # run (and provision, if requested) a VM and start Malcolm (if requested)
             exitCode = malcolmVm.Start()
+
+            # get connection information about the VM and set it so the tests can access it as a fixture
             malcolmInfo = malcolmVm.Info()
             logging.info(json.dumps(malcolmInfo))
             set_malcolm_vm_info(malcolmInfo)
+
+            # malcolm is up and running, time to do testing
             if args.runTests and os.path.isdir(args.testPath):
+
+                # first, collect the set of test .py files that pytest would execute
                 testSetPreExec = MalcolmTestCollection(logger=logging)
                 pytest.main(
                     list(mmguero.Flatten(['--collect-only', '-p', 'no:terminal', args.testPath, extraArgs])),
                     plugins=[testSetPreExec],
                 )
+
+                # for the tests we're about to run, get the set of PCAP files referenced and upload them to Malcolm
                 if testSetPreExec.collected:
+                    pcaps = testSetPreExec.PCAPsReferenced()
                     logging.debug(
                         json.dumps(
                             {'tests': list(testSetPreExec.collected), 'pcaps': list(testSetPreExec.PCAPsReferenced())}
                         )
                     )
+                    for pcapFile in pcaps:
+                        # TODO: would it be better to use SFTP for this? or even the upload interface?
+                        # TODO: Assuming the Malcolm directory like this might not be very robust
+                        malcolmVm.CopyFile(
+                            pcapFile, f'/home/{args.vmImageUsername}/Malcolm/pcap/upload/', tolerateFailure=True
+                        )
+
+                # TODO: wait until all data has been processed (no new documents are being indexed for X amount of time)
+
+                # run the tests
                 exitCode = pytest.main(list(mmguero.Flatten(['-p', 'no:cacheprovider', args.testPath, extraArgs])))
-            malcolmVm.WaitForShutdown()
+
+            # if we started Malcolm, sleep until instructed
+            if args.startMalcolm:
+                malcolmVm.WaitForShutdown()
+
     finally:
         del malcolmVm
 
