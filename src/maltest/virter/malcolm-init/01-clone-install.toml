@@ -116,6 +116,8 @@ ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.tmux.co
 ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.vimrc "$HOME"/.vimrc
 ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.config/systemd/user/*.service "$HOME"/.config/systemd/user/
 
+OLD_GRUB_HASH=$(sha256sum /etc/default/grub | awk '{print $1}')
+
 pushd Malcolm
 python3 ./scripts/install.py --defaults \
     --verbose "$VERBOSE" \
@@ -204,14 +206,16 @@ python3 ./scripts/install.py --defaults \
 
 if command -v direnv &>/dev/null; then
     eval "$(direnv hook bash)"
-    echo 'eval "$(direnv hook bash)"' >> "$HOME"/.bashrc
+    [[ -f "$HOME"/.bashrc ]] && ! grep -q direnv "$HOME"/.bashrc && echo 'eval "$(direnv hook bash)"' >> "$HOME"/.bashrc
     [[ ! -f ./.envrc ]] && echo "export MALCOLM_CONTAINER_RUNTIME=\"$RUNTIME\"" > ./.envrc && direnv allow
 fi
 popd
 
 popd
 
-sudo update-grub2
+NEW_GRUB_HASH=$(sha256sum /etc/default/grub | awk '{print $1}')
+( [[ -z "$NEW_GRUB_HASH" ]] || [[ -z "$OLD_GRUB_HASH" ]] || [[ "$NEW_GRUB_HASH" != "$OLD_GRUB_HASH" ]] ) && touch /tmp/needs_reboot && sudo update-grub2
+
 sudo usermod -a -G docker "$USER"
 sudo loginctl enable-linger "$USER"
 sudo ln -s -r -f /usr/libexec/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose

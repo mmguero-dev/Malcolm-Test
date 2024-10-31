@@ -6,10 +6,12 @@ script = '''
 echo "Configuring system parameters..."
 
 sudo rm -f /etc/motd
+sudo rm -f /tmp/needs_reboot
 
 if ! grep -q unified_cgroup_hierarchy /etc/default/grub; then
     sudo sed -i 's/^\(GRUB_CMDLINE_LINUX=\).*/\1"elevator=deadline systemd.unified_cgroup_hierarchy=1 cgroup_enable=memory swapaccount=1 cgroup.memory=nokmem random.trust_cpu=on"/' /etc/default/grub
     sudo update-grub2
+    touch /tmp/needs_reboot
 fi
 
 if [[ -r /etc/sysctl.conf ]]; then
@@ -18,60 +20,70 @@ if [[ -r /etc/sysctl.conf ]]; then
 # allow dmg reading
 kernel.dmesg_restrict=0
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q file-max /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
 # the maximum number of open file handles
 fs.file-max=518144
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q max_user_watches /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
 # the maximum number of user inotify watches
 fs.inotify.max_user_watches=131072
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q max_queued_events /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
 # how many inotify filesystem events will be held in the kernel queue if the application does not read them
 fs.inotify.max_queued_events=131072
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q max_user_instances /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
 # limits (roughly) how many applications can watch files (per user)
 fs.inotify.max_user_instances=512
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q max_map_count /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
 # the maximum number of memory map areas a process may have
 vm.max_map_count=262144
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q swappiness /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
 # decrease "swappiness" (swapping out runtime memory vs. dropping pages)
 vm.swappiness=1
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q dirty_background_ratio /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
 # the % of system memory fillable with "dirty" pages before flushing
 vm.dirty_background_ratio=40
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q dirty_ratio /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
 # maximum % of dirty system memory before committing everything
 vm.dirty_ratio=80
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q tcp_retries2 /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
 # maximum number of TCP retransmissions
 net.ipv4.tcp_retries2=5
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q somaxconn /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
@@ -88,18 +100,21 @@ net.ipv4.tcp_rmem=10240 425984 33554432
 net.ipv4.tcp_wmem=10240 425984 33554432
 net.ipv4.udp_mem=10240 425984 33554432
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q unprivileged_userns_clone /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
 # allow unprivileged user namespaces
 kernel.unprivileged_userns_clone=1
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q ip_unprivileged_port_start /etc/sysctl.conf; then
         sudo tee -a /etc/sysctl.conf > /dev/null <<'EOT'
 # allow lower unprivileged port bind
 net.ipv4.ip_unprivileged_port_start=80
 EOT
+        touch /tmp/needs_reboot
     fi
 
 elif [[ -d /etc/sysctl.d/ ]]; then
@@ -108,60 +123,70 @@ elif [[ -d /etc/sysctl.d/ ]]; then
 # allow dmg reading
 kernel.dmesg_restrict=0
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q file-max /etc/sysctl.d/*; then
         sudo tee -a /etc/sysctl.d/80_file_max.conf > /dev/null <<'EOT'
 # the maximum number of open file handles
 fs.file-max=518144
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q max_user_watches /etc/sysctl.d/*; then
         sudo tee -a /etc/sysctl.d/80_max_user_watches.conf > /dev/null <<'EOT'
 # the maximum number of user inotify watches
 fs.inotify.max_user_watches=131072
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q max_queued_events /etc/sysctl.d/*; then
         sudo tee -a /etc/sysctl.d/80_max_queued_events.conf > /dev/null <<'EOT'
 # how many inotify filesystem events will be held in the kernel queue if the application does not read them
 fs.inotify.max_queued_events=131072
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q max_user_instances /etc/sysctl.d/*; then
         sudo tee -a /etc/sysctl.d/80_max_user_instances.conf > /dev/null <<'EOT'
 # limits (roughly) how many applications can watch files (per user)
 fs.inotify.max_user_instances=512
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q max_map_count /etc/sysctl.d/*; then
         sudo tee -a /etc/sysctl.d/80_max_map_count.conf > /dev/null <<'EOT'
 # the maximum number of memory map areas a process may have
 vm.max_map_count=262144
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q swappiness /etc/sysctl.d/*; then
         sudo tee -a /etc/sysctl.d/80_swappiness.conf > /dev/null <<'EOT'
 # decrease "swappiness" (swapping out runtime memory vs. dropping pages)
 vm.swappiness=1
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q dirty_background_ratio /etc/sysctl.d/*; then
         sudo tee -a /etc/sysctl.d/80_dirty_background_ratio.conf > /dev/null <<'EOT'
 # the % of system memory fillable with "dirty" pages before flushing
 vm.dirty_background_ratio=40
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q dirty_ratio /etc/sysctl.d/*; then
         sudo tee -a /etc/sysctl.d/80_dirty_ratio.conf > /dev/null <<'EOT'
 # maximum % of dirty system memory before committing everything
 vm.dirty_ratio=80
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q tcp_retries2 /etc/sysctl.d/*; then
         sudo tee -a /etc/sysctl.d/80_tcp_retries2.conf > /dev/null <<'EOT'
 # maximum number of TCP retransmissions
 net.ipv4.tcp_retries2=5
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q somaxconn /etc/sysctl.d/*; then
         sudo tee -a /etc/sysctl.d/80_somaxconn.conf > /dev/null <<'EOT'
@@ -178,18 +203,21 @@ net.ipv4.tcp_rmem=10240 425984 33554432
 net.ipv4.tcp_wmem=10240 425984 33554432
 net.ipv4.udp_mem=10240 425984 33554432
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q unprivileged_userns_clone /etc/sysctl.d/*; then
         sudo tee -a /etc/sysctl.d/80_unprivileged_userns_clone.conf > /dev/null <<'EOT'
 # allow unprivileged user namespaces
 kernel.unprivileged_userns_clone=1
 EOT
+        touch /tmp/needs_reboot
     fi
     if ! grep -q ip_unprivileged_port_start /etc/sysctl.d/*; then
         sudo tee -a /etc/sysctl.d/80_ip_unprivileged_port_start.conf > /dev/null <<'EOT'
 # allow lower unprivileged port bind
 net.ipv4.ip_unprivileged_port_start=80
 EOT
+        touch /tmp/needs_reboot
     fi
 fi
 
@@ -204,25 +232,30 @@ if [[ ! -f /etc/security/limits.d/limits.conf ]]; then
 * soft core 0
 * hard core 0
 EOT
+        touch /tmp/needs_reboot
 fi # limits.conf check
 
 if [[ ! -f /etc/modprobe.d/overlay.conf ]]; then
     sudo mkdir -p /etc/modprobe.d
     echo "options overlay permit_mounts_in_userns=1 metacopy=off redirect_dir=off" | sudo tee /etc/modprobe.d/overlay.conf
+    touch /tmp/needs_reboot
 fi
 
 if [[ -d /etc/systemd/system ]] && [[ ! -f /etc/systemd/system/user@.service.d/delegate.conf ]]; then
     sudo mkdir -p /etc/systemd/system/user@.service.d
     echo -e "[Service]\\nDelegate=cpu cpuset io memory pids" | sudo tee /etc/systemd/system/user@.service.d/delegate.conf
+    touch /tmp/needs_reboot
 fi
 
 sudo touch /etc/subuid
 sudo touch /etc/subgid
 if ! grep --quiet "$USER" /etc/subuid; then
   sudo usermod --add-subuids 200000-265535 "$USER"
+  touch /tmp/needs_reboot
 fi
 if ! grep --quiet "$USER" /etc/subgid; then
   sudo usermod --add-subgids 200000-265535 "$USER"
+  touch /tmp/needs_reboot
 fi
 
 sudo loginctl enable-linger "$USER" &>/dev/null || true

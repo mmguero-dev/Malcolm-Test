@@ -281,7 +281,7 @@ class MalcolmVM(object):
         if (ShuttingDown[0] == False) or (continueThroughShutdown == True):
 
             if self.buildMode:
-                if os.path.basename(provisionFile) == '99-reboot.toml':
+                if 'reboot' in os.path.basename(provisionFile).lower():
                     skipped = True
                 else:
                     self.name = f"{self.vmNamePrefix}-{petname.Generate()}"
@@ -430,14 +430,13 @@ class MalcolmVM(object):
     def ProvisionInit(self):
         global ShuttingDown
 
-        if (self.vmProvision or self.vmBuildName) and os.path.isdir(self.vmProvisionPath):
-
+        if self.vmProvisionOS and os.path.isdir(self.vmTomlVMInitPath):
             # first execute any provisioning in this image's "init" directory, if it exists
             #   (this needs to install rsync if it's not already part of the image)
-            if os.path.isdir(self.vmTomlVMInitPath):
-                for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlVMInitPath, '*.toml'))):
-                    self.ProvisionFile(provisionFile)
+            for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlVMInitPath, '*.toml'))):
+                self.ProvisionFile(provisionFile)
 
+        if self.vmProvisionMalcolm and os.path.isdir(self.vmTomlMalcolmInitPath):
             # now, rsync the container image file to the VM if specified
             if self.containerImageFile:
                 if (
@@ -456,9 +455,8 @@ class MalcolmVM(object):
                     )
 
             # now execute provisioning from the "malcolm init" directory
-            if self.vmProvisionMalcolm and os.path.isdir(self.vmTomlMalcolmInitPath):
-                for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmInitPath, '*.toml'))):
-                    self.ProvisionFile(provisionFile)
+            for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmInitPath, '*.toml'))):
+                self.ProvisionFile(provisionFile)
 
         # sleep a bit, if indicated
         sleepCtr = 0
@@ -493,48 +491,48 @@ class MalcolmVM(object):
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionFini(self):
-        if (self.vmProvision or self.vmBuildName) and os.path.isdir(self.vmProvisionPath):
 
+        if not self.provisionErrorEncountered:
+
+            # now execute provisioning from the "malcolm fini" directory
+            if self.vmProvisionMalcolm and os.path.isdir(self.vmTomlMalcolmFiniPath):
+                for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmFiniPath, '*.toml'))):
+                    self.ProvisionFile(provisionFile, continueThroughShutdown=True, tolerateFailure=True)
+
+            # finally, execute any provisioning in this image's "fini" directory, if it exists
+            if self.vmProvisionOS and os.path.isdir(self.vmTomlVMFiniPath):
+                for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlVMFiniPath, '*.toml'))):
+                    self.ProvisionFile(provisionFile, continueThroughShutdown=True, tolerateFailure=True)
+
+        # if we're in a build mode, we need to "tag" our final build
+        if self.buildMode and self.buildNameCur:
             if not self.provisionErrorEncountered:
-                # now execute provisioning from the "malcolm fini" directory
-                if self.vmProvisionMalcolm and os.path.isdir(self.vmTomlMalcolmFiniPath):
-                    for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmFiniPath, '*.toml'))):
-                        self.ProvisionFile(provisionFile, continueThroughShutdown=True, tolerateFailure=True)
-
-                # finally, execute any provisioning in this image's "fini" directory, if it exists
-                if os.path.isdir(self.vmTomlVMFiniPath):
-                    for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlVMFiniPath, '*.toml'))):
-                        self.ProvisionFile(provisionFile, continueThroughShutdown=True, tolerateFailure=True)
-
-            # if we're in a build mode, we need to "tag" our final build
-            if self.buildMode and self.buildNameCur:
-                if not self.provisionErrorEncountered:
-                    self.ProvisionTOML(
-                        data={
-                            'version': 1,
-                            'steps': [
-                                {
-                                    'shell': {
-                                        'script': '''
-                                            echo "Image provisioned"
-                                        '''
-                                    }
+                self.ProvisionTOML(
+                    data={
+                        'version': 1,
+                        'steps': [
+                            {
+                                'shell': {
+                                    'script': '''
+                                        echo "Image provisioned"
+                                    '''
                                 }
-                            ],
-                        },
-                        continueThroughShutdown=True,
-                        tolerateFailure=True,
-                        overrideBuildName=self.vmBuildName,
-                    )
-                if not self.vmBuildKeepLayers and self.buildNamePre:
-                    for layer in self.buildNamePre:
-                        if layer not in [self.vmBuildName, self.vmImage]:
-                            tmpCode, tmpOut = mmguero.RunProcess(
-                                ['virter', 'image', 'rm', layer],
-                                env=self.osEnv,
-                                debug=self.debug,
-                                logger=self.logger,
-                            )
+                            }
+                        ],
+                    },
+                    continueThroughShutdown=True,
+                    tolerateFailure=True,
+                    overrideBuildName=self.vmBuildName,
+                )
+            if not self.vmBuildKeepLayers and self.buildNamePre:
+                for layer in self.buildNamePre:
+                    if layer not in [self.vmBuildName, self.vmImage]:
+                        tmpCode, tmpOut = mmguero.RunProcess(
+                            ['virter', 'image', 'rm', layer],
+                            env=self.osEnv,
+                            debug=self.debug,
+                            logger=self.logger,
+                        )
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def WaitForShutdown(self):

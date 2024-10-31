@@ -36,7 +36,7 @@ def main():
         ),
         formatter_class=argparse.RawTextHelpFormatter,
         add_help=True,
-        usage=f'{script_name} <arguments>',
+        usage=f'{script_name} <flags> <extra arguments for pytest>',
     )
     parser.add_argument(
         '--verbose',
@@ -148,14 +148,14 @@ def main():
         help='Name of an existing virter VM to use rather than starting up a new one',
     )
     vmSpecsArgGroup.add_argument(
-        '--vm-provision',
-        dest='vmProvision',
+        '--vm-provision-os',
+        dest='vmProvisionOS',
         type=mmguero.str2bool,
         nargs='?',
         metavar="true|false",
         const=True,
         default=True,
-        help=f'Perform VM provisioning',
+        help=f'Perform VM provisioning (OS-specific)',
     )
     vmSpecsArgGroup.add_argument(
         '--vm-provision-malcolm',
@@ -251,9 +251,10 @@ def main():
 
     try:
         parser.error = parser.exit
-        args = parser.parse_args()
+        args, extraArgs = parser.parse_known_args()
     except SystemExit as e:
-        mmguero.eprint(f'Invalid argument(s): {e}')
+        if str(e) != '0':
+            mmguero.eprint(f'Invalid argument(s): {e}')
         sys.exit(2)
 
     # configure logging levels based on -v, -vv, -vvv, etc.
@@ -264,6 +265,8 @@ def main():
     logging.info(os.path.join(script_path, script_name))
     logging.info("Arguments: {}".format(sys.argv[1:]))
     logging.info("Arguments: {}".format(args))
+    if extraArgs:
+        logging.info("Extra arguments: {}".format(extraArgs))
     if args.verbose > logging.DEBUG:
         sys.tracebacklimit = 0
 
@@ -291,7 +294,7 @@ def main():
             logging.info(json.dumps(malcolmInfo))
             set_malcolm_vm_info(malcolmInfo)
             if args.runTests and os.path.isdir(args.testPath):
-                exitCode = pytest.main(['-p', 'no:cacheprovider', args.testPath])
+                exitCode = pytest.main(list(mmguero.Flatten(['-p', 'no:cacheprovider', args.testPath, extraArgs])))
             malcolmVm.WaitForShutdown()
     finally:
         del malcolmVm

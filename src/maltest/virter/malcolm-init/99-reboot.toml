@@ -3,5 +3,5 @@ version = 1
 [[steps]]
 [steps.shell]
 script = '''
-sudo nohup reboot &>/dev/null &
+[[ -f /tmp/needs_reboot ]] && ( rm -f /tmp/needs_reboot ; echo 'Rebooting...' ; sudo nohup reboot &>/dev/null & ) || echo ''
 '''
