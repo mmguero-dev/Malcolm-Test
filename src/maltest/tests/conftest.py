@@ -7,23 +7,23 @@ from requests.auth import HTTPBasicAuth
 
 @pytest.fixture
 def malcolm_vm_info():
-    return get_malcolm_vm_info()
+    yield get_malcolm_vm_info()
 
 
 @pytest.fixture
 def malcolm_http_auth():
     if info := get_malcolm_vm_info():
-        return HTTPBasicAuth(
+        yield HTTPBasicAuth(
             info.get('password', ''),
             info.get('username', ''),
         )
     else:
-        return HTTPBasicAuth('', '')
+        yield HTTPBasicAuth('', '')
 
 
 @pytest.fixture
 def malcolm_url():
     if info := get_malcolm_vm_info():
-        f"https://{info.get('ip', '')}"
+        yield f"https://{info.get('ip', '')}"
     else:
-        return 'http://localhost'
+        yield 'http://localhost'

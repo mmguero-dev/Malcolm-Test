@@ -11,12 +11,21 @@ import sys
 import time
 import tomli
 import tomli_w
+import urllib3
+import warnings
 
 from collections import defaultdict
+
 
 ShuttingDown = [False]
 
 MalcolmVmInfo = None
+
+urllib3.disable_warnings()
+warnings.filterwarnings(
+    "ignore",
+    message="Unverified HTTPS request",
+)
 
 
 ###################################################################################################
@@ -195,8 +204,6 @@ class MalcolmVM(object):
     # }
     def Info(self):
         result = {}
-        result['username'] = self.malcolmUsername
-        result['password'] = self.malcolmPassword
         # list the VMs so we can figure out the host network name of this one
         exitCode, output = mmguero.RunProcess(
             ['virter', 'vm', 'list'],
@@ -236,6 +243,8 @@ class MalcolmVM(object):
                             if len(vals) >= 5:
                                 result['host_device'] = vals[4]
 
+        result['username'] = self.malcolmUsername
+        result['password'] = self.malcolmPassword
         return result
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
