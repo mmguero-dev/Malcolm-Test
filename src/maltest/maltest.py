@@ -227,6 +227,16 @@ def main():
         help=f'Start Malcolm once provisioning is complete (default true)',
     )
     configArgGroup.add_argument(
+        '--stay-up',
+        dest='stayUp',
+        type=mmguero.str2bool,
+        nargs='?',
+        metavar="true|false",
+        const=True,
+        default=False,
+        help=f'Stay running until CTRL+C or SIGKILL is received',
+    )
+    configArgGroup.add_argument(
         '--sleep',
         dest='postInitSleep',
         required=False,
@@ -350,7 +360,7 @@ def main():
                     exitCode = pytest.main(list(mmguero.Flatten(['-p', 'no:cacheprovider', args.testPath, extraArgs])))
 
             # if we started Malcolm, sleep until instructed
-            if args.startMalcolm:
+            if args.stayUp:
                 malcolmVm.WaitForShutdown()
 
     finally:

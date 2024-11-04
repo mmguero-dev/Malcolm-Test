@@ -363,7 +363,6 @@ class MalcolmVM(object):
             if not self.apiSession:
                 self.apiSession = requests.Session()
 
-            now = datetime.now(timezone.utc)
             timeoutEnd = time.time() + MALCOLM_LAST_INGEST_AGE_SECONDS_TIMEOUT
             while (result == False) and (ShuttingDown[0] == False) and (time.time() < timeoutEnd):
                 try:
@@ -378,15 +377,17 @@ class MalcolmVM(object):
                     dataSourceStats = response.json()
                     self.logger.debug(json.dumps(dataSourceStats))
                 except Exception as e:
-                    self.logger.warning(f"Error \"{e}\" waiting for Malcolm to become ready")
+                    self.logger.warning(f"Error \"{e}\" getting ingest statistics")
                     dataSourceStats = {}
 
                 if (
                     isinstance(dataSourceStats, dict)
                     and dataSourceStats
                     and all(
-                        (now - datetime.fromisoformat(timestamp)).total_seconds()
-                        > MALCOLM_LAST_INGEST_AGE_SECONDS_THRESHOLD
+                        (
+                            (datetime.now(timezone.utc) - datetime.fromisoformat(timestamp)).total_seconds()
+                            > MALCOLM_LAST_INGEST_AGE_SECONDS_THRESHOLD
+                        )
                         for timestamp in dataSourceStats.values()
                     )
                 ):
