@@ -8,6 +8,7 @@ import mmguero
 import os
 import petname
 import re
+import requests
 import subprocess
 import sys
 import time
@@ -17,6 +18,7 @@ import urllib3
 import warnings
 
 from collections import defaultdict
+from requests.auth import HTTPBasicAuth
 
 
 ShuttingDown = [False]
@@ -32,6 +34,16 @@ MalcolmVmInfo = None
 PcapHashMap = defaultdict(lambda: None)
 
 UPLOAD_ARTIFACT_LIST_NAME = 'UPLOAD_ARTIFACTS'
+
+MALCOLM_READY_TIMEOUT_SECONDS = 600
+MALCOLM_READY_CHECK_PERIOD_SECONDS = 30
+MALCOLM_READY_REQUIRED_COMPONENTS = [
+    'arkime',
+    'logstash_lumberjack',
+    'logstash_pipelines',
+    'opensearch',
+    'pcap_monitor',
+]
 
 urllib3.disable_warnings()
 warnings.filterwarnings(
@@ -70,6 +82,25 @@ def set_pcap_hash(pcapFileSpec, pcapFileHash):
 def get_pcap_hash_map():
     global PcapHashMap
     return PcapHashMap
+
+
+def get_malcolm_http_auth(info=None):
+    global MalcolmVmInfo
+    if tmpInfo := info if info else MalcolmVmInfo:
+        return HTTPBasicAuth(
+            tmpInfo.get('username', ''),
+            tmpInfo.get('password', ''),
+        )
+    else:
+        return None
+
+
+def get_malcolm_url(info=None):
+    global MalcolmVmInfo
+    if tmpInfo := info if info else MalcolmVmInfo:
+        return f"https://{tmpInfo.get('ip', '')}"
+    else:
+        return 'http://localhost'
 
 
 ###################################################################################################
@@ -136,6 +167,7 @@ class MalcolmVM(object):
         self.debug = debug
         self.logger = logger
         self.name = None
+        self.apiSession = requests.Session()
         self.provisionErrorEncountered = False
 
         self.buildMode = False
@@ -261,6 +293,53 @@ class MalcolmVM(object):
         return bool(exitCode == 0)
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    def Ready(self, waitUntilReadyOrTimeout=True):
+        global ShuttingDown
+        ready = False
+
+        if not self.buildMode:
+            url, auth = self.ConnectionParams()
+            if not self.apiSession:
+                self.apiSession = requests.Session()
+            startWaitEnd = time.time() + (MALCOLM_READY_TIMEOUT_SECONDS)
+            while (ready == False) and (ShuttingDown[0] == False) and (time.time() < startWaitEnd):
+                try:
+                    response = self.apiSession.get(
+                        f"{url}/mapi/ready",
+                        allow_redirects=True,
+                        auth=auth,
+                        verify=False,
+                    )
+                    #
+                    response.raise_for_status()
+                    readyInfo = response.json()
+                    self.logger.debug(json.dumps(readyInfo))
+                    # "ready" means the services required for PCAP processing are running
+                    ready = isinstance(readyInfo, dict) and all(
+                        [readyInfo.get(x, False) for x in MALCOLM_READY_REQUIRED_COMPONENTS]
+                    )
+                except Exception as e:
+                    self.logger.warning(f"Error \"{e}\" waiting for Malcolm to become ready")
+
+                if not ready:
+                    if waitUntilReadyOrTimeout:
+                        sleepCtr = 0
+                        while (ShuttingDown[0] == False) and (sleepCtr < MALCOLM_READY_CHECK_PERIOD_SECONDS):
+                            sleepCtr = sleepCtr + 1
+                            time.sleep(1)
+                    else:
+                        break
+
+            if ready:
+                self.logger.info(f'Malcolm instance at {url} is up and ready to process data')
+            elif waitUntilReadyOrTimeout:
+                self.logger.error(f'Malcolm instance at {url} never became ready')
+            else:
+                self.logger.info(f'Malcolm instance at {url} not yet ready')
+
+        return ready
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # for the running vm represented by this object, return something like this:
     # {
     #   "id": "136",
@@ -314,6 +393,13 @@ class MalcolmVM(object):
         result['username'] = self.malcolmUsername
         result['password'] = self.malcolmPassword
         return result
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    def ConnectionParams(self):
+        if tmpInfo := self.Info():
+            return get_malcolm_url(tmpInfo), get_malcolm_http_auth(tmpInfo)
+        else:
+            return None, None
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def Build(self):
@@ -385,10 +471,7 @@ class MalcolmVM(object):
         else:
             raise subprocess.CalledProcessError(exitCode, cmd, output=output)
 
-        if self.startMalcolm:
-            self.logger.info(f'Malcolm is started and ready to process data on {self.name}')
-        else:
-            self.logger.info(f'{self.name} is provisioned and running')
+        self.logger.info(f'{self.name} is provisioned and running')
         return exitCode
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -590,30 +673,32 @@ class MalcolmVM(object):
             sleepCtr = sleepCtr + 1
             time.sleep(1)
 
-        # start Malcolm and wait for it to become ready to process data
         if (self.buildMode == False) and self.startMalcolm and (ShuttingDown[0] == False):
-            self.ProvisionTOML(
-                data={
-                    'version': 1,
-                    'steps': [
-                        {
-                            'shell': {
-                                'script': '''
-                                    pushd ~/Malcolm &>/dev/null
-                                    ~/Malcolm/scripts/start &>/dev/null &
-                                    START_PID=$!
-                                    sleep 30
-                                    kill $START_PID
-                                    sleep 10
-                                    while [[ $(( docker compose exec api curl -sSL localhost:5000/mapi/ready 2>/dev/null | jq 'if (.arkime and .logstash_lumberjack and .logstash_pipelines and .opensearch and .pcap_monitor) then 1 else 0 end' 2>/dev/null ) || echo 0) != '1' ]]; do echo 'Waiting for Malcolm to become ready...' ; sleep 10; done
-                                    echo 'Malcolm is ready!'
-                                    popd &>/dev/null
-                                '''
+            # run ./scripts/start but return shortly
+            if (
+                self.ProvisionTOML(
+                    data={
+                        'version': 1,
+                        'steps': [
+                            {
+                                'shell': {
+                                    'script': (
+                                        "pushd ~/Malcolm &>/dev/null\n"
+                                        "~/Malcolm/scripts/start &>/dev/null &\n"
+                                        "START_PID=$!\n"
+                                        f"sleep {MALCOLM_READY_CHECK_PERIOD_SECONDS}\n"
+                                        "kill $START_PID\n"
+                                        "echo 'Malcolm is starting...'\n"
+                                        "popd &>/dev/null\n"
+                                    )
+                                }
                             }
-                        }
-                    ],
-                }
-            )
+                        ],
+                    }
+                )
+                == 0
+            ):
+                self.apiSession = requests.Session()
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionFini(self):

@@ -4,7 +4,6 @@ import mmguero
 
 
 def test_malcolm_exists(
-    malcolm_vm_info,
     malcolm_url,
     malcolm_http_auth,
 ):

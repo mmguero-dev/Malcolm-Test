@@ -307,8 +307,8 @@ def main():
             logging.info(json.dumps(malcolmInfo))
             set_malcolm_vm_info(malcolmInfo)
 
-            # malcolm is up and running, time to do testing
-            if args.runTests and os.path.isdir(args.testPath):
+            # malcolm is started; wait for it to be ready to process data, then start testing
+            if args.runTests and os.path.isdir(args.testPath) and malcolmVm.Ready():
 
                 # first, collect the set of test .py files that pytest would execute
                 testSetPreExec = MalcolmTestCollection(logger=logging)
