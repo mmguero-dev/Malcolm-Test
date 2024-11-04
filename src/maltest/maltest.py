@@ -35,6 +35,8 @@ def shutdown_handler(signum, frame):
 ###################################################################################################
 # main
 def main():
+    global ShuttingDown
+
     parser = argparse.ArgumentParser(
         description='\n'.join(
             [
@@ -330,20 +332,22 @@ def main():
                         # TODO: Assuming the Malcolm directory like this might not be very robust
                         pcapFileParts = os.path.splitext(pcapFile)
                         if pcapHash := shakey_file_hash(pcapFile):
-                            copyCode = malcolmVm.CopyFile(
-                                pcapFile,
-                                f'/home/{args.vmImageUsername}/Malcolm/pcap/upload/{pcapHash}{pcapFileParts[1]}',
-                                tolerateFailure=True,
-                            )
-                            if copyCode == 0:
-                                set_pcap_hash(pcapFile, pcapHash)
+                            if ShuttingDown[0] == False:
+                                copyCode = malcolmVm.CopyFile(
+                                    pcapFile,
+                                    f'/home/{args.vmImageUsername}/Malcolm/pcap/upload/{pcapHash}{pcapFileParts[1]}',
+                                    tolerateFailure=True,
+                                )
+                                if copyCode == 0:
+                                    set_pcap_hash(pcapFile, pcapHash)
 
                 # wait for all logs to finish being ingested into the system
                 if not malcolmVm.WaitForLastEventTime():
                     logging.warning(f"Malcolm instance never achieved idle state after inserting events")
 
                 # run the tests
-                exitCode = pytest.main(list(mmguero.Flatten(['-p', 'no:cacheprovider', args.testPath, extraArgs])))
+                if ShuttingDown[0] == False:
+                    exitCode = pytest.main(list(mmguero.Flatten(['-p', 'no:cacheprovider', args.testPath, extraArgs])))
 
             # if we started Malcolm, sleep until instructed
             if args.startMalcolm:
