@@ -23,6 +23,14 @@ ShuttingDown = [False]
 
 MalcolmVmInfo = None
 
+# PcapHashMap contains a map of PCAP files' full path to their
+#   file hash as calculated by shakey_file_hash. The presence
+#   of a PCAP file in this dict means that the PCAP file has
+#   been successfully uploaded to the Malcolm instance for processing,
+#   meaning (assuming auto-tagging based on filename is turned on)
+#   the hash can be used as a query filter for tags.
+PcapHashMap = defaultdict(lambda: None)
+
 UPLOAD_ARTIFACT_LIST_NAME = 'UPLOAD_ARTIFACTS'
 
 urllib3.disable_warnings()
@@ -50,6 +58,18 @@ def set_malcolm_vm_info(info):
 def get_malcolm_vm_info():
     global MalcolmVmInfo
     return MalcolmVmInfo
+
+
+def set_pcap_hash(pcapFileSpec, pcapFileHash):
+    global PcapHashMap
+    if tmpHash := pcapFileHash if pcapFileHash else shakey_file_hash(pcapFileSpec):
+        PcapHashMap[pcapFileSpec] = tmpHash
+    return PcapHashMap[pcapFileSpec]
+
+
+def get_pcap_hash_map():
+    global PcapHashMap
+    return PcapHashMap
 
 
 ###################################################################################################

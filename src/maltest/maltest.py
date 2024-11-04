@@ -13,11 +13,12 @@ import signal
 import sys
 
 from maltest.utils import (
-    MalcolmVM,
     MalcolmTestCollection,
-    ShuttingDown,
+    MalcolmVM,
     set_malcolm_vm_info,
+    set_pcap_hash,
     shakey_file_hash,
+    ShuttingDown,
 )
 
 ###################################################################################################
@@ -329,11 +330,13 @@ def main():
                         # TODO: Assuming the Malcolm directory like this might not be very robust
                         pcapFileParts = os.path.splitext(pcapFile)
                         if pcapHash := shakey_file_hash(pcapFile):
-                            malcolmVm.CopyFile(
+                            copyCode = malcolmVm.CopyFile(
                                 pcapFile,
                                 f'/home/{args.vmImageUsername}/Malcolm/pcap/upload/{pcapHash}{pcapFileParts[1]}',
                                 tolerateFailure=True,
                             )
+                            if copyCode == 0:
+                                set_pcap_hash(pcapFile, pcapHash)
 
                 # TODO: wait until all data has been processed (no new documents are being indexed for X amount of time)
 

@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-from maltest.utils import get_malcolm_vm_info
+from maltest.utils import get_malcolm_vm_info, get_pcap_hash_map
 from requests.auth import HTTPBasicAuth
 
 
 @pytest.fixture
 def malcolm_vm_info():
     yield get_malcolm_vm_info()
+
+
+@pytest.fixture
+def pcap_hash_map():
+    yield get_pcap_hash_map()
 
 
 @pytest.fixture
