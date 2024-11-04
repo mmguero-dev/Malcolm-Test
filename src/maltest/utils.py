@@ -18,6 +18,7 @@ import urllib3
 import warnings
 
 from collections import defaultdict
+from datetime import datetime, timezone
 from requests.auth import HTTPBasicAuth
 
 
@@ -44,6 +45,8 @@ MALCOLM_READY_REQUIRED_COMPONENTS = [
     'opensearch',
     'pcap_monitor',
 ]
+MALCOLM_LAST_INGEST_AGE_SECONDS_THRESHOLD = 300
+MALCOLM_LAST_INGEST_AGE_SECONDS_TIMEOUT = 3600
 
 urllib3.disable_warnings()
 warnings.filterwarnings(
@@ -298,10 +301,12 @@ class MalcolmVM(object):
         ready = False
 
         if not self.buildMode:
+
             url, auth = self.ConnectionParams()
             if not self.apiSession:
                 self.apiSession = requests.Session()
-            startWaitEnd = time.time() + (MALCOLM_READY_TIMEOUT_SECONDS)
+
+            startWaitEnd = time.time() + MALCOLM_READY_TIMEOUT_SECONDS
             while (ready == False) and (ShuttingDown[0] == False) and (time.time() < startWaitEnd):
                 try:
                     response = self.apiSession.get(
@@ -324,7 +329,11 @@ class MalcolmVM(object):
                 if not ready:
                     if waitUntilReadyOrTimeout:
                         sleepCtr = 0
-                        while (ShuttingDown[0] == False) and (sleepCtr < MALCOLM_READY_CHECK_PERIOD_SECONDS):
+                        while (
+                            (ShuttingDown[0] == False)
+                            and (sleepCtr < MALCOLM_READY_CHECK_PERIOD_SECONDS)
+                            and (time.time() < startWaitEnd)
+                        ):
                             sleepCtr = sleepCtr + 1
                             time.sleep(1)
                     else:
@@ -338,6 +347,68 @@ class MalcolmVM(object):
                 self.logger.info(f'Malcolm instance at {url} not yet ready')
 
         return ready
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    def WaitForLastEventTime(
+        self,
+        lastDocIngestAge=MALCOLM_LAST_INGEST_AGE_SECONDS_THRESHOLD,
+        timeout=MALCOLM_LAST_INGEST_AGE_SECONDS_TIMEOUT,
+    ):
+        global ShuttingDown
+        result = False
+
+        if not self.buildMode:
+
+            url, auth = self.ConnectionParams()
+            if not self.apiSession:
+                self.apiSession = requests.Session()
+
+            now = datetime.now(timezone.utc)
+            timeoutEnd = time.time() + MALCOLM_LAST_INGEST_AGE_SECONDS_TIMEOUT
+            while (result == False) and (ShuttingDown[0] == False) and (time.time() < timeoutEnd):
+                try:
+                    # check the ingest statistics which returns a dict of host.name -> event.ingested
+                    response = self.apiSession.get(
+                        f"{url}/mapi/ingest-stats",
+                        allow_redirects=True,
+                        auth=auth,
+                        verify=False,
+                    )
+                    response.raise_for_status()
+                    dataSourceStats = response.json()
+                    self.logger.debug(json.dumps(dataSourceStats))
+                except Exception as e:
+                    self.logger.warning(f"Error \"{e}\" waiting for Malcolm to become ready")
+                    dataSourceStats = {}
+
+                if (
+                    isinstance(dataSourceStats, dict)
+                    and dataSourceStats
+                    and all(
+                        (now - datetime.fromisoformat(timestamp)).total_seconds()
+                        > MALCOLM_LAST_INGEST_AGE_SECONDS_THRESHOLD
+                        for timestamp in dataSourceStats.values()
+                    )
+                ):
+                    # We received a dict of host.name -> event.ingested, it has
+                    #   at least some data in it, and every one of the timestamps
+                    #   is older than the threshold. We can assume all data
+                    #   has been ingested and the system is "idle".
+                    result = True
+
+                else:
+                    # We haven't yet reached "idle" state with regards to our
+                    #   log ingestion, so sleep for a bit and check again.
+                    sleepCtr = 0
+                    while (
+                        (ShuttingDown[0] == False)
+                        and (sleepCtr < MALCOLM_READY_CHECK_PERIOD_SECONDS)
+                        and (time.time() < timeoutEnd)
+                    ):
+                        sleepCtr = sleepCtr + 1
+                        time.sleep(1)
+
+        return result
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # for the running vm represented by this object, return something like this:

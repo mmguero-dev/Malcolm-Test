@@ -338,7 +338,9 @@ def main():
                             if copyCode == 0:
                                 set_pcap_hash(pcapFile, pcapHash)
 
-                # TODO: wait until all data has been processed (no new documents are being indexed for X amount of time)
+                # wait for all logs to finish being ingested into the system
+                if not malcolmVm.WaitForLastEventTime():
+                    logging.warning(f"Malcolm instance never achieved idle state after inserting events")
 
                 # run the tests
                 exitCode = pytest.main(list(mmguero.Flatten(['-p', 'no:cacheprovider', args.testPath, extraArgs])))
