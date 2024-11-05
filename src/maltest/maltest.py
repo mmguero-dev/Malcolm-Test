@@ -12,7 +12,10 @@ import pytest
 import signal
 import sys
 
+import importlib.metadata
+
 from maltest.utils import (
+    MALTEST_PROJECT_NAME,
     MalcolmTestCollection,
     MalcolmVM,
     set_malcolm_vm_info,
@@ -45,7 +48,7 @@ def main():
         ),
         formatter_class=argparse.RawTextHelpFormatter,
         add_help=True,
-        usage=f'{script_name} <flags> <extra arguments for pytest>',
+        usage=f'{MALTEST_PROJECT_NAME} <flags> <extra arguments for pytest>',
     )
     parser.add_argument(
         '--verbose',
@@ -55,15 +58,14 @@ def main():
         help='Increase verbosity (e.g., -v, -vv, etc.)',
     )
     parser.add_argument(
-        '-r',
-        '--rm',
-        dest='removeAfterExec',
+        '--version',
+        dest='showVersion',
         type=mmguero.str2bool,
         nargs='?',
         metavar="true|false",
         const=True,
         default=False,
-        help="Remove virtual Malcolm instance after execution is complete",
+        help="Show script version and exit",
     )
 
     repoArgGroup = parser.add_argument_group('Malcolm Git repo')
@@ -226,6 +228,17 @@ def main():
         default=True,
         help=f'Start Malcolm once provisioning is complete (default true)',
     )
+    parser.add_argument(
+        '-r',
+        '--rm',
+        dest='removeAfterExec',
+        type=mmguero.str2bool,
+        nargs='?',
+        metavar="true|false",
+        const=True,
+        default=False,
+        help="Remove virtual Malcolm instance after execution is complete",
+    )
     configArgGroup.add_argument(
         '--stay-up',
         dest='stayUp',
@@ -268,6 +281,11 @@ def main():
         help=f'Run test suite once Malcolm is started',
     )
 
+    if len(sys.argv) == 1:
+        mmguero.eprint(f'{MALTEST_PROJECT_NAME} v{importlib.metadata.version(MALTEST_PROJECT_NAME)}')
+        parser.print_usage(sys.stderr)
+        sys.exit(1)
+
     try:
         parser.error = parser.exit
         args, extraArgs = parser.parse_known_args()
@@ -289,10 +307,14 @@ def main():
     if args.verbose > logging.DEBUG:
         sys.tracebacklimit = 0
 
+    if args.showVersion:
+        mmguero.eprint(f'{MALTEST_PROJECT_NAME} v{importlib.metadata.version(MALTEST_PROJECT_NAME)}')
+        return 0
+
     # the whole thing runs on virter, so if we don't have that what are we even doing here
     err, _ = mmguero.RunProcess(['virter', 'version'])
     if err != 0:
-        logging.error(f'{script_name} requires virter, please see https://github.com/LINBIT/virter')
+        logging.error(f'{MALTEST_PROJECT_NAME} requires virter, please see https://github.com/LINBIT/virter')
         return 1
 
     # handle sigint and sigterm for graceful shutdown
@@ -330,6 +352,7 @@ def main():
                 )
 
                 # for the tests we're about to run, get the set of PCAP files referenced and upload them to Malcolm
+                pcaps = []
                 if testSetPreExec.collected:
                     pcaps = testSetPreExec.PCAPsReferenced()
                     logging.debug(
@@ -352,7 +375,7 @@ def main():
                                     set_pcap_hash(pcapFile, pcapHash)
 
                 # wait for all logs to finish being ingested into the system
-                if not malcolmVm.WaitForLastEventTime():
+                if pcaps and (not malcolmVm.WaitForLastEventTime()):
                     logging.warning(f"Malcolm instance never achieved idle state after inserting events")
 
                 # run the tests
@@ -366,7 +389,7 @@ def main():
     finally:
         del malcolmVm
 
-    logging.info(f'{script_name} returning {exitCode}')
+    logging.info(f'{MALTEST_PROJECT_NAME} returning {exitCode}')
     return exitCode
 
 

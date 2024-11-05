@@ -21,6 +21,7 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from requests.auth import HTTPBasicAuth
 
+MALTEST_PROJECT_NAME = "malcolm-test"
 
 ShuttingDown = [False]
 
