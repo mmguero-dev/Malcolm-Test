@@ -1,22 +1,3 @@
-# Project-specific
-*.7z
-*.bin
-*.bz2
-*.cap
-*.evx
-*.gz
-*.lz
-*.lz4
-*.lzma
-*.lzo
-*.pcap
-*.pcapng
-*.rar
-*.tar
-*.xz
-*.zip
-*.zst
-
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
