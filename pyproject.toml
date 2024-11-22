@@ -18,11 +18,15 @@ classifiers = [
 ]
 dependencies = [
     'mmguero',
+    'elasticsearch-dsl==8.16.0',
+    'elasticsearch==8.16.0',
+    'opensearch-py==2.6.0',
     'petname==2.6',
+    'psutil==6.1.0',
     'pytest==8.3.3',
     'requests==2.32.3',
-    'tomli==2.0.2',
-    'tomli-w==1.1.0'
+    'tomli-w==1.1.0',
+    'tomli==2.0.2'
 ]
 
 [project.urls]
