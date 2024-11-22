@@ -269,7 +269,17 @@ def main():
         default=os.getenv('MALCOLM_TEST_PATH', os.path.join(script_path, 'tests')),
         help=f'Path containing test definitions (e.g., {os.path.join(script_path, 'tests')})',
     )
-    configArgGroup.add_argument(
+    testArgGroup.add_argument(
+        '-p',
+        '--pcap-path',
+        required=False,
+        dest='pcapPath',
+        metavar='<string>',
+        type=str,
+        default=os.getenv('MALCOLM_PCAP_PATH', os.getcwd()),
+        help=f'Path containing PCAP files used by tests (UPLOAD_ARTIFACTS in tests should resolve relative to this path)',
+    )
+    testArgGroup.add_argument(
         '-t',
         '--run-tests',
         dest='runTests',
@@ -361,17 +371,19 @@ def main():
                         )
                     )
                     for pcapFile in pcaps:
-                        # TODO: would it be better to use SFTP for this? or even the upload interface?
-                        # TODO: Assuming the Malcolm directory like this might not be very robust
-                        pcapFileParts = os.path.splitext(pcapFile)
-                        if pcapHash := shakey_file_hash(pcapFile):
+                        pcapFilespec = pcapFile if os.path.isabs(pcapFile) else os.path.join(args.pcapPath, pcapFile)
+                        pcapFileParts = os.path.splitext(pcapFilespec)
+                        if pcapHash := shakey_file_hash(pcapFilespec):
                             if ShuttingDown[0] == False:
                                 copyCode = malcolmVm.CopyFile(
-                                    pcapFile,
+                                    pcapFilespec,
+                                    # TODO: Assuming the Malcolm directory like this might not be very robust
                                     f'/home/{args.vmImageUsername}/Malcolm/pcap/upload/{pcapHash}{pcapFileParts[1]}',
                                     tolerateFailure=True,
                                 )
                                 if copyCode == 0:
+                                    # this is intentionally not the resolved pcapFilespec version, as the test
+                                    # is going to use this hash to look up the path as it knows it
                                     set_pcap_hash(pcapFile, pcapHash)
 
                 # wait for all logs to finish being ingested into the system
