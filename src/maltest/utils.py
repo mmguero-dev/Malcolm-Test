@@ -49,6 +49,9 @@ MALCOLM_READY_REQUIRED_COMPONENTS = [
 MALCOLM_LAST_INGEST_AGE_SECONDS_THRESHOLD = 300
 MALCOLM_LAST_INGEST_AGE_SECONDS_TIMEOUT = 3600
 
+ARKIME_FILES_INDEX = "arkime_files"
+ARKIME_FILE_SIZE_FIELD = "filesize"
+
 urllib3.disable_warnings()
 warnings.filterwarnings(
     "ignore",
@@ -170,8 +173,19 @@ class MalcolmVM(object):
             setattr(self, key, value)
         self.debug = debug
         self.logger = logger
-        self.name = None
         self.apiSession = requests.Session()
+        (
+            self.name,
+            self.DatabaseClass,
+            self.DatabaseInitArgs,
+            self.SearchClass,
+        ) = (
+            None,
+            None,
+            None,
+            None,
+        )
+
         self.provisionErrorEncountered = False
 
         self.buildMode = False
@@ -304,8 +318,6 @@ class MalcolmVM(object):
         if not self.buildMode:
 
             url, auth = self.ConnectionParams()
-            if not self.apiSession:
-                self.apiSession = requests.Session()
 
             startWaitEnd = time.time() + MALCOLM_READY_TIMEOUT_SECONDS
             while (ready == False) and (ShuttingDown[0] == False) and (time.time() < startWaitEnd):
@@ -361,8 +373,6 @@ class MalcolmVM(object):
         if not self.buildMode:
 
             url, auth = self.ConnectionParams()
-            if not self.apiSession:
-                self.apiSession = requests.Session()
 
             timeoutEnd = time.time() + MALCOLM_LAST_INGEST_AGE_SECONDS_TIMEOUT
             while (result == False) and (ShuttingDown[0] == False) and (time.time() < timeoutEnd):
@@ -409,6 +419,39 @@ class MalcolmVM(object):
                     ):
                         sleepCtr = sleepCtr + 1
                         time.sleep(1)
+
+        return result
+
+    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    def ArkimeAlreadyHasFile(
+        self,
+        filename,
+    ):
+        result = False
+
+        if not self.buildMode:
+            url, auth = self.ConnectionParams()
+            if self.DatabaseClass:
+                try:
+                    s = self.SearchClass(
+                        using=self.DatabaseClass(
+                            hosts=[
+                                f"{url}/mapi/opensearch",
+                            ],
+                            **self.DatabaseInitArgs,
+                        ),
+                        index=ARKIME_FILES_INDEX,
+                    ).query("wildcard", name=f"*{os.path.basename(filename)}")
+                    response = s.execute()
+                    for hit in response:
+                        fileInfo = hit.to_dict()
+                        if (ARKIME_FILE_SIZE_FIELD in fileInfo) and (fileInfo[ARKIME_FILE_SIZE_FIELD] > 0):
+                            result = True
+                            break
+                except Exception as e:
+                    self.logger.warning(f"Error \"{e}\" getting files list")
+                    dataSourceStats = {}
+            self.logger.debug(f'ArkimeAlreadyHasFile({filename}): {result}')
 
         return result
 
@@ -465,6 +508,54 @@ class MalcolmVM(object):
 
         result['username'] = self.malcolmUsername
         result['password'] = self.malcolmPassword
+
+        # last but not least, try to access the API to get the version info
+        try:
+            response = self.apiSession.get(
+                f"{get_malcolm_url(result)}/mapi/version",
+                allow_redirects=True,
+                auth=get_malcolm_http_auth(result),
+                verify=False,
+            )
+            response.raise_for_status()
+            if versionInfo := response.json():
+                result['version'] = versionInfo
+        except Exception as e:
+            self.logger.error(f"Error getting version API: {e}")
+
+        try:
+            # the first time we call Info for this object, set up our database classes, etc.
+            if self.DatabaseClass is None:
+
+                self.DatabaseInitArgs = {}
+                self.DatabaseInitArgs['request_timeout'] = 1
+                self.DatabaseInitArgs['verify_certs'] = False
+                self.DatabaseInitArgs['ssl_assert_hostname'] = False
+                self.DatabaseInitArgs['ssl_show_warn'] = False
+
+                if 'elastic' in mmguero.DeepGet(result, ['version', 'mode'], '').lower():
+                    elasticImport = mmguero.DoDynamicImport(
+                        'elasticsearch', 'elasticsearch', interactive=False, debug=self.debug
+                    )
+                    elasticDslImport = mmguero.DoDynamicImport(
+                        'elasticsearch_dsl', 'elasticsearch-dsl', interactive=False, debug=self.debug
+                    )
+                    self.DatabaseClass = elasticImport.Elasticsearch
+                    self.SearchClass = elasticDslImport.Search
+                    if self.malcolmUsername:
+                        self.DatabaseInitArgs['basic_auth'] = (self.malcolmUsername, self.malcolmPassword)
+                else:
+                    osImport = mmguero.DoDynamicImport(
+                        'opensearchpy', 'opensearch-py', interactive=False, debug=self.debug
+                    )
+                    self.DatabaseClass = osImport.OpenSearch
+                    self.SearchClass = osImport.Search
+                    if self.malcolmUsername:
+                        self.DatabaseInitArgs['http_auth'] = (self.malcolmUsername, self.malcolmPassword)
+
+        except Exception as e:
+            self.logger.error(f"Error getting database objects: {e}")
+
         return result
 
     # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

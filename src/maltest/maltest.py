@@ -374,17 +374,21 @@ def main():
                         pcapFilespec = pcapFile if os.path.isabs(pcapFile) else os.path.join(args.pcapPath, pcapFile)
                         pcapFileParts = os.path.splitext(pcapFilespec)
                         if pcapHash := shakey_file_hash(pcapFilespec):
+                            pcapNewName = pcapHash + pcapFileParts[1]
                             if ShuttingDown[0] == False:
-                                copyCode = malcolmVm.CopyFile(
-                                    pcapFilespec,
-                                    # TODO: Assuming the Malcolm directory like this might not be very robust
-                                    f'/home/{args.vmImageUsername}/Malcolm/pcap/upload/{pcapHash}{pcapFileParts[1]}',
-                                    tolerateFailure=True,
-                                )
-                                if copyCode == 0:
-                                    # this is intentionally not the resolved pcapFilespec version, as the test
-                                    # is going to use this hash to look up the path as it knows it
+                                if malcolmVm.ArkimeAlreadyHasFile(pcapNewName):
+                                    # we've already uploaded this file, so we don't need to upload it again
                                     set_pcap_hash(pcapFile, pcapHash)
+                                else:
+                                    # copy the file to Malcolm for processing
+                                    copyCode = malcolmVm.CopyFile(
+                                        pcapFilespec,
+                                        # TODO: Assuming the Malcolm directory like this might not be very robust
+                                        f'/home/{args.vmImageUsername}/Malcolm/pcap/upload/{pcapNewName}',
+                                        tolerateFailure=True,
+                                    )
+                                    if copyCode == 0:
+                                        set_pcap_hash(pcapFile, pcapHash)
 
                 # wait for all logs to finish being ingested into the system
                 if pcaps and (not malcolmVm.WaitForLastEventTime()):
