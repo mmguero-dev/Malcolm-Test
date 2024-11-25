@@ -1,6 +1,6 @@
 # malcolm-test
 
-`malcolm-test` serves to run an instance of [Malcolm](https://idaholab.github.io/Malcolm/) and verify the results of system tests executed against it. It consists mostly of a [control script](#MalcolmVMInitScript), TOML files containing provisioning steps for virtual machine creation, and the test files themselves. See [this issue](https://github.com/idaholab/Malcolm/issues/11) in the Malcolm repository for the discussion leading up to its creation.
+`malcolm-test` serves to run an instance of [Malcolm](https://idaholab.github.io/Malcolm/) and verify the results of system tests executed against it. It consists mostly of a [control script](#Usage), TOML files containing provisioning steps for virtual machine creation, and the test files themselves. See [this issue](https://github.com/idaholab/Malcolm/issues/11) in the Malcolm repository for the discussion leading up to its creation.
 
 * [Installation](#Installation)
 * [Usage](#Usage)
@@ -267,7 +267,7 @@ Package source highlights (under [`./src/maltest`](src/maltest)):
 
 * 🐍 [`maltest.py`](#Usage) - A Python script for running Malcolm in a VM with virter
 * 🗁 `virter/` - A directory structure containing TOML files for [provisioning](https://github.com/LINBIT/virter/blob/master/doc/provisioning.md) the virter VMs in which Malcolm will run. Its subdirectories are arranged thusly:
-    - 🗁 `debian-12/` - A directory matching the name of the virter image (supplied to [`maltest.py`](#MalcolmVMInitScript) with the `-i`/`--image` argument)
+    - 🗁 `debian-12/` - A directory matching the name of the virter image (supplied to `maltest.py`) with the `-i`/`--image` argument)
         + 🗁 `init/` - TOML files for the initial steps of provisioning the OS (before setting up and starting Malcolm)
         + 🗁 `fini/` - TOML files for the final stages of provisioning the OS (after shutting down Malcolm)
     - 🗁 `malcolm-init/` - Distribution-agnostic provisioning TOML files for setting up Malcolm prior to starting it
