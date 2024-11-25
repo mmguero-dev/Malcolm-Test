@@ -1,3 +1,12 @@
+"""
+malcolm-test module containing classes used for managing and interfacing with a Malcolm VM
+
+The classes of interest in this module include:
+
+- MalcolmTestCollection - A pytest plugin used to gather the list of tests to be run
+- MalcolmVM - Represents a Malcolm instance running inside a virter-managed libvirt virtual machine
+"""
+
 # -*- coding: utf-8 -*-
 
 import ast
@@ -325,7 +334,6 @@ class ElasticsearchObjs(DatabaseObjs):
             self.DatabaseInitArgs['basic_auth'] = (username, password)
 
 
-###################################################################################################
 class MalcolmTestCollection(object):
     """
     MalcolmTestCollection: A pytest plugin (https://docs.pytest.org/en/stable/how-to/writing_plugins.html)

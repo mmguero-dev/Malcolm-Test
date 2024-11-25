@@ -1,3 +1,7 @@
+"""
+malcolm-test module containing the CLI interface and high-level execution logic
+"""
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -24,20 +28,35 @@ from maltest.utils import (
     ShuttingDown,
 )
 
-###################################################################################################
 script_name = os.path.basename(__file__)
 script_path = os.path.dirname(os.path.realpath(__file__))
 
 
-###################################################################################################
-# handle sigint/sigterm and set a global shutdown variable
 def shutdown_handler(signum, frame):
+    """
+    shutdown_handler: Signal handler for interrupting program execution with SIGKILL or SIGINT,
+    setting ShuttingDown to True
+
+    Args:
+        signum - The signal number (e.g., signal.SIGINT for Ctrl-C)
+        frame - The current stack frame
+
+    Returns:
+        None
+    """
     ShuttingDown[0] = True
 
 
-###################################################################################################
-# main
 def main():
+    """
+    main: Main program execution
+
+    Args:
+        None (see --help for command-line arguments)
+
+    Returns:
+        0 for success, non-0 for error
+    """
     global ShuttingDown
 
     parser = argparse.ArgumentParser(
@@ -76,7 +95,7 @@ def main():
         dest='repoUrl',
         metavar='<string>',
         type=str,
-        default=os.getenv('MALCOLM_REPO_URL', 'idaholab'),
+        default=os.getenv('MALCOLM_REPO_URL', 'https://github.com/idaholab/Malcolm'),
         help='Malcolm repository url (e.g., https://github.com/idaholab/Malcolm)',
     )
     repoArgGroup.add_argument(
@@ -228,7 +247,7 @@ def main():
         default=True,
         help=f'Start Malcolm once provisioning is complete (default true)',
     )
-    parser.add_argument(
+    configArgGroup.add_argument(
         '-r',
         '--rm',
         dest='removeAfterExec',
@@ -409,7 +428,6 @@ def main():
     return exitCode
 
 
-###################################################################################################
 if __name__ == '__main__':
     if main() > 0:
         sys.exit(0)
