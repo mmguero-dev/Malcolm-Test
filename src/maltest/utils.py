@@ -21,30 +21,20 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from requests.auth import HTTPBasicAuth
 
+# the name of this Python project used for packaging
 MALTEST_PROJECT_NAME = "malcolm-test"
 
-ShuttingDown = [False]
+# silence warning about self-signed TLS certificates
+urllib3.disable_warnings()
+warnings.filterwarnings(
+    "ignore",
+    message="Unverified HTTPS request",
+)
 
-MalcolmVmInfo = None
-
-# PcapHashMap contains a map of PCAP files' full path to their
-#   file hash as calculated by shakey_file_hash. The presence
-#   of a PCAP file in this dict means that the PCAP file has
-#   been successfully uploaded to the Malcolm instance for processing,
-#   meaning (assuming auto-tagging based on filename is turned on)
-#   the hash can be used as a query filter for tags.
-PcapHashMap = defaultdict(lambda: None)
-
-
-class DatabaseObjs:
-    def __init__(self):
-        self.DatabaseClass = None
-        self.SearchClass = None
-        self.DatabaseInitArgs = defaultdict(lambda: None)
-
-
+# tests should define UPLOAD_ARTIFACTS for files (e.g., PCAPs) they need uploaded to Malcolm
 UPLOAD_ARTIFACT_LIST_NAME = 'UPLOAD_ARTIFACTS'
 
+# parameters for checking that a Malcolm instance is ready
 MALCOLM_READY_TIMEOUT_SECONDS = 600
 MALCOLM_READY_CHECK_PERIOD_SECONDS = 30
 MALCOLM_READY_REQUIRED_COMPONENTS = [
@@ -57,18 +47,45 @@ MALCOLM_READY_REQUIRED_COMPONENTS = [
 MALCOLM_LAST_INGEST_AGE_SECONDS_THRESHOLD = 300
 MALCOLM_LAST_INGEST_AGE_SECONDS_TIMEOUT = 3600
 
+# used to check with Arkime to see if a PCAP file has already been uploaded
 ARKIME_FILES_INDEX = "arkime_files"
 ARKIME_FILE_SIZE_FIELD = "filesize"
 
-urllib3.disable_warnings()
-warnings.filterwarnings(
-    "ignore",
-    message="Unverified HTTPS request",
-)
+# Global variable used to set or check that the program is being prematurely
+# interrupted (e.g., with CTRL+C or SIGKILL)
+ShuttingDown = [False]
+
+"""
+As malcolm-test is only used against one Malcolm instance at a time, this global
+variable represents the info dict (see MalcolmVM.Info) containing information
+about the currently-connected-to Malcolm instance. Mainly this is used so it
+can be accessed by the pytest fixtures for connection info.
+"""
+MalcolmVmInfo = None
+
+"""
+PcapHashMap contains a map of PCAP files' full path to their
+file hash as calculated by shakey_file_hash. The presence
+of a PCAP file in this dict means that the PCAP file has
+been successfully uploaded to the Malcolm instance for processing,
+meaning (assuming auto-tagging based on filename is turned on)
+the hash can be used as a query filter for tags.
+"""
+PcapHashMap = defaultdict(lambda: None)
 
 
-###################################################################################################
 def shakey_file_hash(filename, digest_len=8):
+    """
+    shakey_file_hash: Calculate SHAKE256 file hash for the contents of a file
+    See https://docs.python.org/3/library/hashlib.html#hashlib.shake_256
+
+    Args:
+        filename   - filename of file to open and hash
+        digest_len - byte length of the digest to return for the hash (default 8)
+
+    Returns:
+        str hex representation of digest (of length digest_len*2) for the SHAKE256 of the file
+    """
     try:
         with open(filename, 'rb', buffering=0) as f:
             return hashlib.file_digest(f, 'shake_256').hexdigest(digest_len)
@@ -76,58 +93,17 @@ def shakey_file_hash(filename, digest_len=8):
         return None
 
 
-###################################################################################################
-def set_malcolm_vm_info(info):
-    global MalcolmVmInfo
-    MalcolmVmInfo = info
-
-
-def get_malcolm_vm_info():
-    global MalcolmVmInfo
-    return MalcolmVmInfo
-
-
-def set_pcap_hash(pcapFileSpec, pcapFileHash):
-    global PcapHashMap
-    if tmpHash := pcapFileHash if pcapFileHash else shakey_file_hash(pcapFileSpec):
-        PcapHashMap[pcapFileSpec] = tmpHash
-    return PcapHashMap[pcapFileSpec]
-
-
-def get_pcap_hash_map():
-    global PcapHashMap
-    return PcapHashMap
-
-
-def get_malcolm_http_auth(info=None):
-    global MalcolmVmInfo
-    if tmpInfo := info if info else MalcolmVmInfo:
-        return HTTPBasicAuth(
-            tmpInfo.get('username', ''),
-            tmpInfo.get('password', ''),
-        )
-    else:
-        return None
-
-
-def get_malcolm_url(info=None):
-    global MalcolmVmInfo
-    if tmpInfo := info if info else MalcolmVmInfo:
-        return f"https://{tmpInfo.get('ip', '')}"
-    else:
-        return 'http://localhost'
-
-
-def get_database_objs(info=None):
-    global MalcolmVmInfo
-    if tmpInfo := info if info else MalcolmVmInfo:
-        return tmpInfo.get('database_objs', DatabaseObjs())
-    else:
-        return DatabaseObjs()
-
-
-###################################################################################################
 def parse_virter_log_line(log_line):
+    """
+    parse_virter_log_line: Return a dict created by parsing the name/value pairs output
+    from running a "virter" command", handling quote escaping
+
+    Args:
+        log_line - str of the log line returned by virter
+
+    Returns:
+        dict() of the name/value pairs from the log line, unescaping the quotes
+    """
     pattern = r'(\w+)=(".*?"|\S+)'
     matches = re.findall(pattern, log_line)
     log_dict = defaultdict(lambda: log_line)
@@ -140,20 +116,275 @@ def parse_virter_log_line(log_line):
     return log_dict
 
 
+def set_malcolm_vm_info(info):
+    """
+    set_malcolm_vm_info: Sets the global MalcolmVmInfo variable to the provided info object
+
+    Args:
+        info - The info object to store as MalcolmVmInfo
+
+    Returns:
+        the global MalcolmVmInfo object
+    """
+    global MalcolmVmInfo
+    MalcolmVmInfo = info
+    return MalcolmVmInfo
+
+
+def get_malcolm_vm_info():
+    """
+    get_malcolm_vm_info: Return the global MalcolmVmInfo object
+
+    Args:
+        None
+
+    Returns:
+        the global MalcolmVmInfo object
+    """
+    global MalcolmVmInfo
+    return MalcolmVmInfo
+
+
+def set_pcap_hash(pcapFileSpec, pcapFileHash=None):
+    """
+    set_pcap_hash: Given a filespec for a PCAP file, store its hash in the global PcapHashMap
+
+    Args:
+        pcapFileSpec - a filename for a PCAP file
+        pcapFileHash - the hash for the PCAP file; if not yet calculated, it will be
+
+    Returns:
+        the hash for the PCAP file as stored in PcapHashMap
+    """
+    global PcapHashMap
+    if tmpHash := pcapFileHash if pcapFileHash else shakey_file_hash(pcapFileSpec):
+        PcapHashMap[pcapFileSpec] = tmpHash
+    return PcapHashMap[pcapFileSpec]
+
+
+def get_pcap_hash_map():
+    """
+    get_pcap_hash_map: Return the global PcapHashMap object
+
+    Args:
+        None
+
+    Returns:
+        the global PcapHashMap object
+    """
+    global PcapHashMap
+    return PcapHashMap
+
+
+def get_malcolm_http_auth(info=None):
+    """
+    get_malcolm_http_auth: Return a HTTPBasicAuth object with username and password
+    from the provided info dict, or from global MalcolmVmInfo if one is not provided
+
+    Args:
+        info - an dict containing info for a MalcolmVM object (see MalcolmVM.Info)
+
+    Returns:
+        an HTTPBasicAuth with username and password from info, or None for invalid input
+    """
+    global MalcolmVmInfo
+    if tmpInfo := info if info else MalcolmVmInfo:
+        return HTTPBasicAuth(
+            tmpInfo.get('username', ''),
+            tmpInfo.get('password', ''),
+        )
+    else:
+        return None
+
+
+def get_malcolm_url(info=None):
+    """
+    get_malcolm_url: Return the Malcolm URL from the provided info dict, or from the
+    global MalcolmVmInfo if one is not provided
+
+    Args:
+        info - an dict containing info for a MalcolmVM object (see MalcolmVM.Info)
+
+    Returns:
+        the Malcolm URL with https:// prefix
+    """
+    global MalcolmVmInfo
+    if tmpInfo := info if info else MalcolmVmInfo:
+        return f"https://{tmpInfo.get('ip', '')}"
+    else:
+        return 'http://localhost'
+
+
+def get_database_objs(info=None):
+    """
+    get_database_objs: Return the DatabaseObjs class from the provided info dict, or from the
+    global MalcolmVmInfo if one is not provided
+
+    Args:
+        info - an dict containing info for a MalcolmVM object (see MalcolmVM.Info)
+
+    Returns:
+        the DatabaseObjs object stored as 'database_objs' in the info dict
+    """
+    global MalcolmVmInfo
+    if tmpInfo := info if info else MalcolmVmInfo:
+        return tmpInfo.get('database_objs', DatabaseObjs())
+    else:
+        return DatabaseObjs()
+
+
+class DatabaseObjs(object):
+    """
+    DatabaseObjs: Parent class for objects containing classes references
+    for either the OpenSearch or Elasticsearch Python libraries
+
+    Attributes:
+        DatabaseClass    - the OpenSearch or Elasticsearch class
+        SearchClass      - the Search class
+        DatabaseInitArgs - a dict of arguments to pass into the DatabaseClass
+                           constructor (e.g., **obj.DatabaseInitArgs)
+    """
+
+    def __init__(self):
+        """
+        __init__: Initialize object attributes to their "unset" values
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
+        self.DatabaseClass = None
+        self.SearchClass = None
+        self.DatabaseInitArgs = defaultdict(lambda: None)
+        self.DatabaseInitArgs['request_timeout'] = 1
+        self.DatabaseInitArgs['verify_certs'] = False
+        self.DatabaseInitArgs['ssl_assert_hostname'] = False
+        self.DatabaseInitArgs['ssl_show_warn'] = False
+
+
+class OpenSearchObjs(DatabaseObjs):
+    """
+    OpenSearchObjs: Child class of DatabaseObjs for OpenSearch Python library
+
+    Attributes:
+        OpenSearchImport - the opensearchpy import (dynamically imported)
+    """
+
+    def __init__(self, username=None, password=None):
+        """
+        __init__: Sets the class references and initialization args for using
+        the OpenSearch python library
+
+        Args:
+            username - the username string to set in the http_auth init argument
+            password - the password string to set in the http_auth init argument
+
+        Returns:
+            None
+        """
+        super().__init__()
+        self.OpenSearchImport = mmguero.DoDynamicImport('opensearchpy', 'opensearch-py', interactive=False)
+        if self.OpenSearchImport:
+            self.DatabaseClass = self.OpenSearchImport.OpenSearch
+            self.SearchClass = self.OpenSearchImport.Search
+        if username:
+            self.DatabaseInitArgs['http_auth'] = (username, password)
+
+
+class ElasticsearchObjs(DatabaseObjs):
+    """
+    ElasticsearchObjs: Child class of DatabaseObjs for Elasticsearch and Elasticsearch-DSL Python library
+
+    Attributes:
+        ElasticImport - the elasticsearch import (dynamically imported)
+        ElasticDslImport - the elasticsearch_dsl import (dynamically imported)
+    """
+
+    def __init__(self, username=None, password=None):
+        """
+        __init__: Sets the class references and initialization args for using
+        the Elasticsearch/Elasticsearch-DSL python libraries
+
+        Args:
+            username - the username string to set in the basic_auth init argument
+            password - the password string to set in the basic_auth init argument
+
+        Returns:
+            None
+        """
+        super().__init__()
+        self.ElasticImport = mmguero.DoDynamicImport('elasticsearch', 'elasticsearch', interactive=False)
+        self.ElasticDslImport = mmguero.DoDynamicImport('elasticsearch_dsl', 'elasticsearch-dsl', interactive=False)
+        if self.ElasticImport:
+            self.DatabaseClass = self.elasticImport.Elasticsearch
+        if self.ElasticDslImport:
+            self.SearchClass = self.elasticDslImport.Search
+        if username:
+            self.DatabaseInitArgs['basic_auth'] = (username, password)
+
+
 ###################################################################################################
 class MalcolmTestCollection(object):
-    def __init__(
-        self,
-        logger=None,
-    ):
+    """
+    MalcolmTestCollection: A pytest plugin (https://docs.pytest.org/en/stable/how-to/writing_plugins.html)
+    used to hook pytest_collection_modifyitems to gather the list of tests to be run
+    by pytest. To be used with pytest's --collect-only option, e.g.:
+
+        testSetPreExec = MalcolmTestCollection()
+        pytest.main(['--collect-only', '-p', 'no:terminal'], plugins=[testSetPreExec])
+        if testSetPreExec.collected:
+            for pcapFile in testSetPreExec.PCAPsReferenced():
+                ...
+
+    This allows for determining artifacts used by tests prior to running the tests themselves.
+
+    Attributes:
+        logger - the Python logging object for debug, info, warning, etc.
+        collected - a set of the pytest files to be run
+    """
+
+    def __init__(self, logger=None):
+        """
+        __init__: Initialize the MalcolmTestCollection to default values
+
+        Args:
+            logger - the Python logging object for debug, info, warning, etc.
+
+        Returns:
+            None
+        """
         self.logger = logger
         self.collected = set()
 
     def pytest_collection_modifyitems(self, items):
+        """
+        pytest_collection_modifyitems: Hook for pytest called after test collection has been performed
+        see https://docs.pytest.org/en/latest/reference/reference.html#pytest.hookspec.pytest_collection_modifyitems
+
+        Args:
+            items - list of item objects
+
+        Returns:
+            None
+        """
         for item in items:
             self.collected.add(str(item.reportinfo()[0]))
 
     def PCAPsReferenced(self):
+        """
+        PCAPsReferenced: Process collected pytest test files by parsing them and looking for UPLOAD_ARTIFACTS,
+        which are then collected into a set of all referenced artifacts to be uploaded.
+        This can be used to upload these artifacts to Malcolm and make sure they finish processing prior to
+        running the tests that depend on them.
+
+        Args:
+            None
+
+        Returns:
+            A set of all files defined in UPLOAD_ARTIFACTS for all tests to be run
+        """
         result = list()
         for testPyPath in self.collected:
             try:
@@ -177,16 +408,52 @@ class MalcolmTestCollection(object):
 
 ###################################################################################################
 class MalcolmVM(object):
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    """
+    MalcolmVM: Represents a Malcolm instance running inside a virter-managed libvirt virtual machine
+
+    Attributes:
+        ...                         - all attributes from argparse.Namespace are added as attributes
+        apiSession                  - a requests.Session() object to be used to cache HTTP connections
+        buildMode                   - True if we are only building a vm (virter image build), False otherwise
+        buildNameCur                - the name of the current layer of the vm being build (if buildMode == True)
+        buildNamePre                - the name of the parent layer of the vm being build (if buildMode == True)
+        dbObjs                      - the DatabaseObjs object with the class reference for this Malcolm's DB type
+        debug                       - True or False if debug flags have been set (logging level >= DEBUG)
+        logger                      - the Python logging object for debug, info, warning, etc.
+        malcolmPassword             - username str for the Malcolm instance
+        malcolmUsername             - password str for the Malcolm instance
+        osEnv                       - a copy of the system's environment variables which may be tweaked to run subprocesses
+        provisionEnvArgs            - a dict of arguments to pass to virter during provisioning, mainly containing environment variables
+        provisionErrorEncountered   - True if an error was encountered during provisioning, False otherwise
+        vmTomlMalcolmFiniPath       - path for Malcolm "fini" TOML provisioning files
+        vmTomlMalcolmInitPath       - path for Malcolm "init" TOML provisioning files
+        vmTomlVMFiniPath            - path for VM "fini" TOML provisioning files
+        vmTomlVMInitPath            - path for VM "init" TOML provisioning files
+    """
+
     def __init__(
         self,
         args,
         debug=False,
         logger=None,
     ):
+        """
+        __init__: Initialize a new MalcolmVM object by processing some environment variables
+        and preparing to run virter commands
+
+        Args:
+            args   - an argparse.Namespace (as-is from parse_known_args via command-line arguments, see parser in maltest.py)
+            debug  - True or False if debug flags have been set (logging level >= DEBUG)
+            logger - the Python logging object for debug, info, warning, etc.
+
+        Returns:
+            None
+        """
+
         # copy all attributes from the argparse Namespace to the object itself
         for key, value in vars(args).items():
             setattr(self, key, value)
+
         self.debug = debug
         self.logger = logger
         self.apiSession = requests.Session()
@@ -284,12 +551,22 @@ class MalcolmVM(object):
                 ]
             )
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def __del__(self):
-        # if requested, make sure to shut down the VM
+        """
+        __del__: Finalize a running Malcolm virter VM by finalizing any remaining provisioning and,
+        if requested, destroying the VM
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         try:
+            # if there are any remaining provisioning steps, handle them now
             self.ProvisionFini()
         finally:
+            # if requested, make sure to shut down the VM
             if self.removeAfterExec and not self.buildMode:
                 tmpExitCode, output = mmguero.RunProcess(
                     ['virter', 'vm', 'rm', self.name],
@@ -299,14 +576,30 @@ class MalcolmVM(object):
                 )
                 self.PrintVirterLogOutput(output)
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def PrintVirterLogOutput(self, output):
+        """
+        PrintVirterLogOutput: log (with INFO severity) virter command output for debugging purposes
+
+        Args:
+            output - the output from a "virter" command"
+
+        Returns:
+            None
+        """
         for x in mmguero.GetIterable(output):
             if x:
                 self.logger.info(parse_virter_log_line(x)['msg'])
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def Exists(self):
+        """
+        Exists: Ascertain whether or not the virter VM this object represents is actually running
+
+        Args:
+            None
+
+        Returns:
+            True if "virter vm exists" succeeds with a 0 error code, False otherwise
+        """
         exitCode, output = mmguero.RunProcess(
             ['virter', 'vm', 'exists', self.name],
             env=self.osEnv,
@@ -315,8 +608,17 @@ class MalcolmVM(object):
         )
         return bool(exitCode == 0)
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def Ready(self, waitUntilReadyOrTimeout=True):
+        """
+        Ready: Connect to the Malcolm "ready" API and check if all of the MALCOLM_READY_REQUIRED_COMPONENTS
+        services return that they are up and running, optionally waiting up to MALCOLM_READY_TIMEOUT_SECONDS
+
+        Args:
+            waitUntilReadyOrTimeout - if True, wait up to MALCOLM_READY_TIMEOUT_SECONDS seconds until ready
+
+        Returns:
+            True if the Malcolm instance is ready to process data, False otherwise
+        """
         global ShuttingDown
         ready = False
 
@@ -333,7 +635,6 @@ class MalcolmVM(object):
                         auth=auth,
                         verify=False,
                     )
-                    #
                     response.raise_for_status()
                     readyInfo = response.json()
                     self.logger.debug(json.dumps(readyInfo))
@@ -366,12 +667,25 @@ class MalcolmVM(object):
 
         return ready
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def WaitForLastEventTime(
         self,
         lastDocIngestAge=MALCOLM_LAST_INGEST_AGE_SECONDS_THRESHOLD,
         timeout=MALCOLM_LAST_INGEST_AGE_SECONDS_TIMEOUT,
     ):
+        """
+        WaitForLastEventTime: Wait until the last time Malcolm processed a network traffic log is at least
+        some period in the past, up to a given timeout. In other words, "make sure the latest log is at least
+        N seconds old."
+
+        Args:
+            lastDocIngestAge - the number of seconds in the past the most recently-ingested network traffic log
+                               must be before returning True
+            timeout - to avoid waiting forever, return regardless if the time exceeds this number of seconds
+
+        Returns:
+            True if the most recentlyly-ingested log was ingested at least lastDocIngestAge ago, False on timeout
+        """
+
         global ShuttingDown
         result = False
 
@@ -379,7 +693,7 @@ class MalcolmVM(object):
 
             url, auth = self.ConnectionParams()
 
-            timeoutEnd = time.time() + MALCOLM_LAST_INGEST_AGE_SECONDS_TIMEOUT
+            timeoutEnd = time.time() + timeout
             while (result == False) and (ShuttingDown[0] == False) and (time.time() < timeoutEnd):
                 try:
                     # check the ingest statistics which returns a dict of host.name -> event.ingested
@@ -402,7 +716,7 @@ class MalcolmVM(object):
                     and all(
                         (
                             (datetime.now(timezone.utc) - datetime.fromisoformat(timestamp)).total_seconds()
-                            > MALCOLM_LAST_INGEST_AGE_SECONDS_THRESHOLD
+                            > lastDocIngestAge
                         )
                         for timestamp in dataSourceStats.values()
                     )
@@ -427,11 +741,19 @@ class MalcolmVM(object):
 
         return result
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ArkimeAlreadyHasFile(
         self,
         filename,
     ):
+        """
+        ArkimeAlreadyHasFile: Query Arkime's files index to see if it's already processed a file
+
+        Args:
+            filename - the PCAP filename to query
+
+        Returns:
+            True if Arkime has already seen a file with this name, False otherwise
+        """
         result = False
 
         if not self.buildMode:
@@ -460,7 +782,6 @@ class MalcolmVM(object):
 
         return result
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # for the running vm represented by this object, return something like this:
     # {
     #   "id": "136",
@@ -471,6 +792,31 @@ class MalcolmVM(object):
     #   "host_device": "vnet0"
     # }
     def Info(self):
+        """
+        Info: Return a dict containing information about the VM and the Malcolm instance
+        Example output:
+            {
+              "id": "254",
+              "name": "malcolm-free-asp",
+              "network": "default",
+              "mac": "52:54:00:00:00:fe",
+              "ip": "192.168.122.254",
+              "hostname": "malcolm-free-asp",
+              "host_device": "vnet0",
+              "username": "xxxxxxx",
+              "password": "yyyyyyy",
+              "version": {
+                <contents of Malcolm's /mapi/version API>
+              },
+              "database_objs": <self.dbObjs>
+            }
+
+        Args:
+            None
+
+        Returns:
+            dict containing information about the VM and the Malcolm instance
+        """
         result = {}
         # list the VMs so we can figure out the host network name of this one
         exitCode, output = mmguero.RunProcess(
@@ -531,33 +877,11 @@ class MalcolmVM(object):
         try:
             # the first time we call Info for this object, set up our database classes, etc.
             if self.dbObjs is None:
-
-                self.dbObjs = DatabaseObjs()
-                self.dbObjs.DatabaseInitArgs['request_timeout'] = 1
-                self.dbObjs.DatabaseInitArgs['verify_certs'] = False
-                self.dbObjs.DatabaseInitArgs['ssl_assert_hostname'] = False
-                self.dbObjs.DatabaseInitArgs['ssl_show_warn'] = False
-
-                if 'elastic' in mmguero.DeepGet(result, ['version', 'mode'], '').lower():
-                    elasticImport = mmguero.DoDynamicImport(
-                        'elasticsearch', 'elasticsearch', interactive=False, debug=self.debug
-                    )
-                    elasticDslImport = mmguero.DoDynamicImport(
-                        'elasticsearch_dsl', 'elasticsearch-dsl', interactive=False, debug=self.debug
-                    )
-                    self.dbObjs.DatabaseClass = elasticImport.Elasticsearch
-                    self.dbObjs.SearchClass = elasticDslImport.Search
-                    if self.malcolmUsername:
-                        self.dbObjs.DatabaseInitArgs['basic_auth'] = (self.malcolmUsername, self.malcolmPassword)
-                else:
-                    osImport = mmguero.DoDynamicImport(
-                        'opensearchpy', 'opensearch-py', interactive=False, debug=self.debug
-                    )
-                    self.dbObjs.DatabaseClass = osImport.OpenSearch
-                    self.dbObjs.SearchClass = osImport.Search
-                    if self.malcolmUsername:
-                        self.dbObjs.DatabaseInitArgs['http_auth'] = (self.malcolmUsername, self.malcolmPassword)
-
+                self.dbObjs = (
+                    ElasticsearchObjs(self.malcolmUsername, self.malcolmPassword)
+                    if ('elastic' in mmguero.DeepGet(result, ['version', 'mode'], '').lower())
+                    else OpenSearchObjs(self.malcolmUsername, self.malcolmPassword)
+                )
         except Exception as e:
             self.logger.error(f"Error getting database objects: {e}")
 
@@ -565,15 +889,31 @@ class MalcolmVM(object):
 
         return result
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ConnectionParams(self):
+        """
+        ConnectionParams: return the URL and HTTP auth parameters from this object's Info
+
+        Args:
+            None
+
+        Returns:
+            a tuple containing the Malcolm URL and HTTPBasicAuth information
+        """
         if tmpInfo := self.Info():
             return get_malcolm_url(tmpInfo), get_malcolm_http_auth(tmpInfo)
         else:
             return None, None
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def Build(self):
+        """
+        Build: Use "virter image build" to build and provision a VM and tag it for later reuse
+
+        Args:
+            None
+
+        Returns:
+            0 upon success
+        """
         self.buildMode = True
 
         # use virter to build a new virtual machine image
@@ -585,8 +925,16 @@ class MalcolmVM(object):
 
         return 0
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def Start(self):
+        """
+        Start: Start a virter VM (or adopt an existing one) and provision it
+
+        Args:
+            None
+
+        Returns:
+            exit code from "virter vm run" command
+        """
         global ShuttingDown
 
         self.buildMode = False
@@ -645,7 +993,6 @@ class MalcolmVM(object):
         self.logger.info(f'{self.name} is provisioned and running')
         return exitCode
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionFile(
         self,
         provisionFile,
@@ -653,6 +1000,20 @@ class MalcolmVM(object):
         tolerateFailure=False,
         overrideBuildName=None,
     ):
+        """
+        ProvisionFile: Execute provisioning steps (provided in a TOML file) for this VM
+
+        Args:
+            provisionFile           - a TOML file containing provisioning steps
+                                      (see https://github.com/LINBIT/virter/blob/master/doc/provisioning.md)
+            continueThroughShutdown - if True, will execute even if ShuttingDown is True
+            tolerateFailure         - if True, will not abort the operation even if an error is encountered
+            overrideBuildName       - if in build mode, use this for the layer name instead of autocreating one
+
+        Returns:
+            exit code from virter command(s)
+        """
+
         global ShuttingDown
         skipped = False
 
@@ -741,7 +1102,6 @@ class MalcolmVM(object):
 
         return code
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionTOML(
         self,
         data,
@@ -749,6 +1109,18 @@ class MalcolmVM(object):
         tolerateFailure=False,
         overrideBuildName=None,
     ):
+        """
+        ProvisionTOML: Save provided data as a TOML file and provision it (see ProvisionFile)
+
+        Args:
+            data                    - data structure to convert to TOML for provisioning
+            continueThroughShutdown - if True, will execute even if ShuttingDown is True
+            tolerateFailure         - if True, will not abort the operation even if an error is encountered
+            overrideBuildName       - if in build mode, use this for the layer name instead of autocreating one
+
+        Returns:
+            exit code from ProvisionFile
+        """
         with mmguero.TemporaryFilename(suffix='.toml') as tomlFileName:
             with open(tomlFileName, 'w') as tomlFile:
                 tomlFile.write(tomli_w.dumps(data))
@@ -759,7 +1131,6 @@ class MalcolmVM(object):
                 overrideBuildName=overrideBuildName,
             )
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def CopyFile(
         self,
         sourceFileSpec,
@@ -769,6 +1140,20 @@ class MalcolmVM(object):
         tolerateFailure=False,
         overrideBuildName=None,
     ):
+        """
+        CopyFile: Perform a file copy operation with the virter VM (virter vm cp)
+
+        Args:
+            sourceFileSpec           - source filespec on the local machine
+            destFileSpec             - destination filespec on the VM
+            makeDestDirWorldWritable - if True, will mkdir -p and chmod 777 the destination directory first
+            continueThroughShutdown  - if True, will execute even if ShuttingDown is True
+            tolerateFailure          - if True, will not abort the operation even if an error is encountered
+            overrideBuildName        - if in build mode, use this for the layer name instead of autocreating one
+
+        Returns:
+            exit code from the virter command(s)
+        """
         code = 0
         if makeDestDirWorldWritable:
             code = self.ProvisionTOML(
@@ -806,8 +1191,17 @@ class MalcolmVM(object):
             )
         return code
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionInit(self):
+        """
+        ProvisionInit: Execute "initialization" provisioning steps, first for the VM and
+        then for Malcolm itself, then start Malcolm if requested
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
         global ShuttingDown
 
         if self.vmProvisionOS and os.path.isdir(self.vmTomlVMInitPath):
@@ -871,8 +1265,18 @@ class MalcolmVM(object):
             ):
                 self.apiSession = requests.Session()
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def ProvisionFini(self):
+        """
+        ProvisionFini: Execute "finalization" provisioning steps, first for the Malcolm and then the VM.
+        These steps only execute if no fatal initialization provisioning errors were encountered. Also,
+        if we're in "build mode", then the final build layer will be tagged with the name provided.
+
+        Args:
+            None
+
+        Returns:
+            None
+        """
 
         if not self.provisionErrorEncountered:
 
@@ -916,8 +1320,17 @@ class MalcolmVM(object):
                             logger=self.logger,
                         )
 
-    # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     def WaitForShutdown(self):
+        """
+        WaitForShutdown: Wait forever as long ShuttingDown is False and the VM Exists(). If the VM
+        appears to go away, wait five minutes before giving up and returning.
+
+        Args:
+            None
+
+        Returns:
+            0 if ShuttingDown became True, 1 if the VM disappeared
+        """
         global ShuttingDown
 
         returnCode = 0
