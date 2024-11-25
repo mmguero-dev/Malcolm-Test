@@ -35,6 +35,14 @@ MalcolmVmInfo = None
 #   the hash can be used as a query filter for tags.
 PcapHashMap = defaultdict(lambda: None)
 
+
+class DatabaseObjs:
+    def __init__(self):
+        self.DatabaseClass = None
+        self.SearchClass = None
+        self.DatabaseInitArgs = defaultdict(lambda: None)
+
+
 UPLOAD_ARTIFACT_LIST_NAME = 'UPLOAD_ARTIFACTS'
 
 MALCOLM_READY_TIMEOUT_SECONDS = 600
@@ -110,6 +118,14 @@ def get_malcolm_url(info=None):
         return 'http://localhost'
 
 
+def get_database_objs(info=None):
+    global MalcolmVmInfo
+    if tmpInfo := info if info else MalcolmVmInfo:
+        return tmpInfo.get('database_objs', DatabaseObjs())
+    else:
+        return DatabaseObjs()
+
+
 ###################################################################################################
 def parse_virter_log_line(log_line):
     pattern = r'(\w+)=(".*?"|\S+)'
@@ -174,18 +190,7 @@ class MalcolmVM(object):
         self.debug = debug
         self.logger = logger
         self.apiSession = requests.Session()
-        (
-            self.name,
-            self.DatabaseClass,
-            self.DatabaseInitArgs,
-            self.SearchClass,
-        ) = (
-            None,
-            None,
-            None,
-            None,
-        )
-
+        self.dbObjs = None
         self.provisionErrorEncountered = False
 
         self.buildMode = False
@@ -431,14 +436,14 @@ class MalcolmVM(object):
 
         if not self.buildMode:
             url, auth = self.ConnectionParams()
-            if self.DatabaseClass:
+            if self.dbObjs:
                 try:
-                    s = self.SearchClass(
-                        using=self.DatabaseClass(
+                    s = self.dbObjs.SearchClass(
+                        using=self.dbObjs.DatabaseClass(
                             hosts=[
                                 f"{url}/mapi/opensearch",
                             ],
-                            **self.DatabaseInitArgs,
+                            **self.dbObjs.DatabaseInitArgs,
                         ),
                         index=ARKIME_FILES_INDEX,
                     ).query("wildcard", name=f"*{os.path.basename(filename)}")
@@ -525,13 +530,13 @@ class MalcolmVM(object):
 
         try:
             # the first time we call Info for this object, set up our database classes, etc.
-            if self.DatabaseClass is None:
+            if self.dbObjs is None:
 
-                self.DatabaseInitArgs = {}
-                self.DatabaseInitArgs['request_timeout'] = 1
-                self.DatabaseInitArgs['verify_certs'] = False
-                self.DatabaseInitArgs['ssl_assert_hostname'] = False
-                self.DatabaseInitArgs['ssl_show_warn'] = False
+                self.dbObjs = DatabaseObjs()
+                self.dbObjs.DatabaseInitArgs['request_timeout'] = 1
+                self.dbObjs.DatabaseInitArgs['verify_certs'] = False
+                self.dbObjs.DatabaseInitArgs['ssl_assert_hostname'] = False
+                self.dbObjs.DatabaseInitArgs['ssl_show_warn'] = False
 
                 if 'elastic' in mmguero.DeepGet(result, ['version', 'mode'], '').lower():
                     elasticImport = mmguero.DoDynamicImport(
@@ -540,21 +545,23 @@ class MalcolmVM(object):
                     elasticDslImport = mmguero.DoDynamicImport(
                         'elasticsearch_dsl', 'elasticsearch-dsl', interactive=False, debug=self.debug
                     )
-                    self.DatabaseClass = elasticImport.Elasticsearch
-                    self.SearchClass = elasticDslImport.Search
+                    self.dbObjs.DatabaseClass = elasticImport.Elasticsearch
+                    self.dbObjs.SearchClass = elasticDslImport.Search
                     if self.malcolmUsername:
-                        self.DatabaseInitArgs['basic_auth'] = (self.malcolmUsername, self.malcolmPassword)
+                        self.dbObjs.DatabaseInitArgs['basic_auth'] = (self.malcolmUsername, self.malcolmPassword)
                 else:
                     osImport = mmguero.DoDynamicImport(
                         'opensearchpy', 'opensearch-py', interactive=False, debug=self.debug
                     )
-                    self.DatabaseClass = osImport.OpenSearch
-                    self.SearchClass = osImport.Search
+                    self.dbObjs.DatabaseClass = osImport.OpenSearch
+                    self.dbObjs.SearchClass = osImport.Search
                     if self.malcolmUsername:
-                        self.DatabaseInitArgs['http_auth'] = (self.malcolmUsername, self.malcolmPassword)
+                        self.dbObjs.DatabaseInitArgs['http_auth'] = (self.malcolmUsername, self.malcolmPassword)
 
         except Exception as e:
             self.logger.error(f"Error getting database objects: {e}")
+
+        result['database_objs'] = self.dbObjs
 
         return result
 

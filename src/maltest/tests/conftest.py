@@ -6,6 +6,7 @@ from maltest.utils import (
     get_pcap_hash_map,
     get_malcolm_http_auth,
     get_malcolm_url,
+    get_database_objs,
 )
 
 
@@ -22,6 +23,11 @@ def pcap_hash_map():
 @pytest.fixture
 def malcolm_http_auth():
     yield get_malcolm_http_auth()
+
+
+@pytest.fixture
+def database_objs():
+    yield get_database_objs()
 
 
 @pytest.fixture

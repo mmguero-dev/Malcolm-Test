@@ -348,7 +348,7 @@ def main():
 
             # get connection information about the VM and set it so the tests can access it as a fixture
             malcolmInfo = malcolmVm.Info()
-            logging.info(json.dumps(malcolmInfo))
+            logging.info(json.dumps(malcolmInfo, default=mmguero.JsonObjSerializer))
             set_malcolm_vm_info(malcolmInfo)
 
             # malcolm is started; wait for it to be ready to process data, then start testing
