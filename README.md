@@ -280,12 +280,7 @@ Package source highlights (under [`./src/maltest`](src/maltest)):
 
 New tests should be placed in the [`./src/maltest/tests/`](src/maltest/tests/) directory. Tests have access to the connection information for the running Malcolm instance through [fixtures](https://docs.pytest.org/en/stable/reference/fixtures.html#conftest-py-sharing-fixtures-across-multiple-files) provided by [`./src/maltest/tests/conftest.py`](src/maltest/tests/conftest.py).
 
-See the following tests for examples of how to access and use these fixtures:
-
-* [test_malcolm_response.py](src/maltest/tests/test_malcolm_response.py) - querying the [Malcolm API](https://idaholab.github.io/Malcolm/docs/api.html#API) using the [Requests](https://requests.readthedocs.io/en/latest/) library
-* [test_malcolm_db_health.py](src/maltest/tests/test_malcolm_db_health.py) - querying the [data store](https://idaholab.github.io/Malcolm/docs/opensearch-instances.html#OpenSearchInstance) directly using the [OpenSearch](https://opensearch.org/docs/latest/clients/python-low-level/) or [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/client/python-api/current/index.html) client
-
-Use `UPLOAD_ARTIFACTS` to specify a PCAP file required by your test. This example test would succeed if both `foobar.pcap` and `barbaz.pcap` were uploaded to Malcolm and their hashes stored in the global `pcap_hash_map`:
+Use `UPLOAD_ARTIFACTS` to specify a PCAP file or files required by your test. This example test would succeed if both `foobar.pcap` and `barbaz.pcap` were uploaded to Malcolm and their hashes stored in the global `pcap_hash_map`:
 
 ```python
 UPLOAD_ARTIFACTS = ['foobar.pcap', 'barbaz.pcap']
@@ -297,3 +292,9 @@ def test_malcolm_pcap_hash(
 ```
 
 As PCAP files are uploaded to Malcolm by `malcolm-test`, they are [hashed](https://docs.python.org/3/library/hashlib.html#hashlib.shake_256) and stored in `pcap_hash_map` which maps the PCAP filename to its hash. The PCAP file is renamed to the hex-representation of the hash digest and the file extension (e.g., if the contents of `foobar.pcap` hashed to `52b92cdcec4af0e1`, the file would be uploaded as `52b92cdcec4af0e1.pcap`). This is done to ensure that conflicting PCAP filenames among different tests are resolved prior to processing. Since Malcolm automatically [assigns tags](https://idaholab.github.io/Malcolm/docs/upload.html#Tagging) to uploaded PCAP files, this hash should be used as a filter for the `tags` field for any network log-based queries for data related to that PCAP file. This way your tests can have reproducible outputs without being affected by PCAPs for other tests.
+
+See the following tests for examples of how to access and use these fixtures:
+
+* [test_malcolm_response.py](src/maltest/tests/test_malcolm_response.py) - querying the [Malcolm API](https://idaholab.github.io/Malcolm/docs/api.html#API) using the [Requests](https://requests.readthedocs.io/en/latest/) library
+* [test_malcolm_db_health.py](src/maltest/tests/test_malcolm_db_health.py) - querying the [data store](https://idaholab.github.io/Malcolm/docs/opensearch-instances.html#OpenSearchInstance) directly using the [OpenSearch](https://opensearch.org/docs/latest/clients/python-low-level/) or [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/client/python-api/current/index.html) client
+* [test_icsnpp_protocols.py](src/maltest/tests/test_icsnpp_protocols.py) - querying the [Malcolm Field Aggregation API](https://idaholab.github.io/Malcolm/docs/api-aggregations.html), specifying a `from` query start time filter to search all historical data, a filter on `event.provider` to limit the result set to records from Zeek, and a `tags` filter to limit the matching records to the tags represented by the uploaded PCAPs (see above)

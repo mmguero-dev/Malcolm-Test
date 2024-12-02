@@ -1,6 +1,8 @@
-import logging
 import mmguero
 import requests
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 UPLOAD_ARTIFACTS = [
     'Protocols/BACnet.pcap',
@@ -109,8 +111,6 @@ EXPECTED_DATASETS = [
     "tds_sql_batch",
 ]
 
-LOGGER = logging.getLogger(__name__)
-
 HEADERS = {"Content-Type": "application/json"}
 
 
@@ -126,7 +126,10 @@ def test_icsnpp_protocols(
         headers=HEADERS,
         json={
             "from": "0",
-            "filter": {"event.provider": "zeek"},
+            "filter": {
+                "event.provider": "zeek",
+                "tags": [pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+            },
         },
         allow_redirects=True,
         auth=malcolm_http_auth,
@@ -136,4 +139,5 @@ def test_icsnpp_protocols(
     buckets = {
         item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), ['event.dataset', 'buckets'], [])
     }
+    LOGGER.info(buckets)
     assert all([(buckets.get(x, 0) > 0) for x in EXPECTED_DATASETS])
