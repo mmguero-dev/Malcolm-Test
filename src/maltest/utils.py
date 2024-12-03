@@ -720,13 +720,15 @@ class MalcolmVM(object):
 
                 if (
                     isinstance(dataSourceStats, dict)
-                    and dataSourceStats
+                    and ("sources" in dataSourceStats)
+                    and isinstance(dataSourceStats["sources"], dict)
+                    and dataSourceStats["sources"]
                     and all(
                         (
                             (datetime.now(timezone.utc) - datetime.fromisoformat(timestamp)).total_seconds()
                             > lastDocIngestAge
                         )
-                        for timestamp in dataSourceStats.values()
+                        for timestamp in dataSourceStats["sources"].values()
                     )
                 ):
                     # We received a dict of host.name -> event.ingested, it has
