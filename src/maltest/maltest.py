@@ -295,7 +295,7 @@ def main():
         dest='pcapPath',
         metavar='<string>',
         type=str,
-        default=os.getenv('MALCOLM_PCAP_PATH', os.getcwd()),
+        default=os.getenv('MALCOLM_PCAP_PATH', ''),
         help=f'Path containing PCAP files used by tests (UPLOAD_ARTIFACTS in tests should resolve relative to this path)',
     )
     testArgGroup.add_argument(
@@ -339,6 +339,10 @@ def main():
     if args.showVersion:
         mmguero.eprint(f'{MALTEST_PROJECT_NAME} v{importlib.metadata.version(MALTEST_PROJECT_NAME)}')
         return 0
+
+    if not os.path.isdir(args.pcapPath):
+        logging.error('PCAP path must be specified with -p/--pcap-path or MALCOLM_PCAP_PATH')
+        return 1
 
     # the whole thing runs on virter, so if we don't have that what are we even doing here
     err, _ = mmguero.RunProcess(['virter', 'version'])
