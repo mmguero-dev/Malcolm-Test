@@ -108,8 +108,6 @@ EXPECTED_DATASETS = [
     "tds_sql_batch",
 ]
 
-HEADERS = {"Content-Type": "application/json"}
-
 
 def test_icsnpp_protocols(
     malcolm_http_auth,
@@ -120,7 +118,7 @@ def test_icsnpp_protocols(
 
     response = requests.post(
         f"{malcolm_url}/mapi/agg/event.dataset",
-        headers=HEADERS,
+        headers={"Content-Type": "application/json"},
         json={
             "from": "0",
             "filter": {

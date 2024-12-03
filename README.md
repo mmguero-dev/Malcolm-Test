@@ -97,6 +97,8 @@ Testing configuration:
                         Path containing PCAP files used by tests (UPLOAD_ARTIFACTS in tests should resolve relative to this path)
   -t, --run-tests [true|false]
                         Run test suite once Malcolm is started
+  -w, --wait-for-idle [true|false]
+                        Wait for ingest idle state before running tests
 ```
 
 ### <a name="UsageExamples"></a> Examples

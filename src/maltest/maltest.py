@@ -309,6 +309,17 @@ def main():
         default=True,
         help=f'Run test suite once Malcolm is started',
     )
+    testArgGroup.add_argument(
+        '-w',
+        '--wait-for-idle',
+        dest='waitForIdle',
+        type=mmguero.str2bool,
+        nargs='?',
+        metavar="true|false",
+        const=True,
+        default=True,
+        help=f'Wait for ingest idle state before running tests',
+    )
 
     if len(sys.argv) == 1:
         mmguero.eprint(f'{MALTEST_PROJECT_NAME} v{importlib.metadata.version(MALTEST_PROJECT_NAME)}')
@@ -414,7 +425,7 @@ def main():
                                         set_pcap_hash(pcapFile, pcapHash)
 
                 # wait for all logs to finish being ingested into the system
-                if pcaps and (not malcolmVm.WaitForLastEventTime()):
+                if pcaps and args.waitForIdle and (not malcolmVm.WaitForLastEventTime()):
                     logging.warning(f"Malcolm instance never achieved idle state after inserting events")
 
                 # run the tests
