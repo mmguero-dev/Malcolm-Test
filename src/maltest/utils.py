@@ -882,7 +882,7 @@ class MalcolmVM(object):
             if versionInfo := response.json():
                 result['version'] = versionInfo
         except Exception as e:
-            self.logger.error(f"Error getting version API: {e}")
+            self.logger.warning(f"Error getting version API: {e}")
 
         try:
             # the first time we call Info for this object, set up our database classes, etc.
