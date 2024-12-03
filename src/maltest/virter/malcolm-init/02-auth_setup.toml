@@ -25,7 +25,7 @@ if [[ -d "$HOME"/Malcolm ]]; then
         --auth-admin-password-htpasswd "$AUTH_PASSWORD_HTPASSWD" \
         --auth-generate-webcerts \
         --auth-generate-fwcerts \
-        --auth-generate-netbox-passwords &>/dev/null || true
+        --auth-generate-netbox-passwords || true
     popd
 fi
 '''
