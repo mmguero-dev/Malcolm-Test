@@ -21,7 +21,12 @@ UPLOAD_ARTIFACTS = [
     "protocols/TDS.pcap",
 ]
 
-# TODO: genisys is not enabled by default?
+# TODO:
+# "ecat_arp_info",
+# "ecat_foe_info",
+# "ecat_soe_info",
+# "ge_srtp",
+# "genisys",
 EXPECTED_DATASETS = [
     "bacnet",
     "bacnet_device_control",
@@ -109,7 +114,7 @@ EXPECTED_DATASETS = [
 ]
 
 
-def test_icsnpp_protocols(
+def test_ot_protocols(
     malcolm_http_auth,
     malcolm_url,
     pcap_hash_map,
