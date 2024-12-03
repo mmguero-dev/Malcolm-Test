@@ -5,23 +5,20 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 UPLOAD_ARTIFACTS = [
-    'Protocols/BACnet.pcap',
-    'Protocols/BSAP.pcap',
-    'Protocols/DNP3.pcap',
-    'Protocols/ENIP.pcap',
-    'Protocols/ETHERCAT.pcap',
-    'Protocols/GENISYS.pcap',
-    'Protocols/hart-ip.pcap',
-    'Protocols/hart-ip_all_messageIDs.pcap',
-    'Protocols/hart-ip_all_types_and_commands_sent.pcap',
-    'Protocols/hart-ip_publish_and_keepAlive.pcap',
-    'Protocols/Modbus.pcap',
-    'Protocols/MQTT.pcap',
-    'Protocols/OPCUA-Binary.pcap',
-    'Protocols/PROFINET.pcap',
-    'Protocols/S7comm.pcap',
-    'Protocols/Synchrophasor.pcap',
-    'Protocols/TDS.pcap',
+    "protocols/BACnet.pcap",
+    "protocols/BSAP.pcap",
+    "protocols/DNP3.pcap",
+    "protocols/ENIP.pcap",
+    "protocols/ETHERCAT.pcap",
+    "protocols/GENISYS.pcap",
+    "protocols/HARTIP.pcap",
+    "protocols/Modbus.pcap",
+    "protocols/MQTT.pcap",
+    "protocols/OPCUA-Binary.pcap",
+    "protocols/PROFINET.pcap",
+    "protocols/S7comm.pcap",
+    "protocols/Synchrophasor.pcap",
+    "protocols/TDS.pcap",
 ]
 
 # TODO: genisys is not enabled by default?
