@@ -1,8 +1,10 @@
+import pytest
 import requests
 import json
 import mmguero
 
 
+@pytest.mark.mapi
 def test_malcolm_exists(
     malcolm_url,
     malcolm_http_auth,

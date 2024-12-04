@@ -1,3 +1,4 @@
+import pytest
 import mmguero
 import requests
 import logging
@@ -5,6 +6,7 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 
+@pytest.mark.mapi
 def test_api_indices(
     malcolm_url,
     malcolm_http_auth,

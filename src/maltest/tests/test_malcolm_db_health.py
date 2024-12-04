@@ -1,3 +1,7 @@
+import pytest
+
+
+@pytest.mark.mapi
 def test_malcolm_db_health(
     malcolm_url,
     database_objs,

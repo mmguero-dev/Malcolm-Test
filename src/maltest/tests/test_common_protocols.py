@@ -1,3 +1,4 @@
+import pytest
 import mmguero
 import requests
 import logging
@@ -90,6 +91,8 @@ EXPECTED_DATASETS = [
 ]
 
 
+@pytest.mark.mapi
+@pytest.mark.pcap
 def test_common_protocols(
     malcolm_http_auth,
     malcolm_url,

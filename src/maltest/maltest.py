@@ -67,7 +67,7 @@ def main():
         ),
         formatter_class=argparse.RawTextHelpFormatter,
         add_help=True,
-        usage=f'{MALTEST_PROJECT_NAME} <flags> <extra arguments for pytest>',
+        usage=f'{MALTEST_PROJECT_NAME} <options> -- <extra arguments for pytest>',
     )
     parser.add_argument(
         '--verbose',
@@ -352,6 +352,8 @@ def main():
     logging.info("Arguments: {}".format(sys.argv[1:]))
     logging.info("Arguments: {}".format(args))
     if extraArgs:
+        if '--' in extraArgs:
+            extraArgs.remove('--')
         logging.info("Extra arguments: {}".format(extraArgs))
     if args.verbose > logging.DEBUG:
         sys.tracebacklimit = 0

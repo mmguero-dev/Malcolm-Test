@@ -42,7 +42,7 @@ When [installed](#Installation) via pip, this script may be executed as `malcolm
 ### Usage
 
 ```
-usage: malcolm-test <flags> <extra arguments for pytest>
+usage: malcolm-test <options> -- <extra arguments for pytest>
 
 See README.md for usage details.
 
@@ -212,6 +212,7 @@ $ malcolm-test \
   --sleep 0 \
   --existing-vm malcolm-nearby-satyr \
   --vm-provision-os false \
+  --vm-provision-malcolm false \
   --run-tests \
   --pcap-path /path/to/Malcolm-Test-PCAP
 ====================== test session starts ======================
@@ -285,8 +286,11 @@ New tests should be placed in the [`./src/maltest/tests/`](src/maltest/tests/) d
 Use `UPLOAD_ARTIFACTS` to specify a PCAP file or files required by your test. This example test would succeed if both `foobar.pcap` and `barbaz.pcap` were uploaded to Malcolm and their hashes stored in the global `pcap_hash_map`:
 
 ```python
+import pytest
+
 UPLOAD_ARTIFACTS = ['foobar.pcap', 'barbaz.pcap']
 
+@pytest.mark.pcap
 def test_malcolm_pcap_hash(
     pcap_hash_map,
 ):
@@ -297,8 +301,42 @@ As PCAP files are uploaded to Malcolm by `malcolm-test`, they are [hashed](https
 
 By default, `malcolm-test` instructs Malcolm to skip [NetBox enrichment](https://idaholab.github.io/Malcolm/docs/upload.html#UploadNetBoxSite) for PCAPs found in `UPLOAD_ARTIFACTS`. To make a test perform NetBox enrichment for its PCAP (using the Malcolm instance's default NetBox site), set `NETBOX_ENRICH` to `True` in the test source.
 
-See the following tests for examples of how to access and use these fixtures:
+See the following tests for examples of how to access and use fixtures:
 
 * [test_malcolm_response.py](src/maltest/tests/test_malcolm_response.py) - querying the [Malcolm API](https://idaholab.github.io/Malcolm/docs/api.html#API) using the [Requests](https://requests.readthedocs.io/en/latest/) library
 * [test_malcolm_db_health.py](src/maltest/tests/test_malcolm_db_health.py) - querying the [data store](https://idaholab.github.io/Malcolm/docs/opensearch-instances.html#OpenSearchInstance) directly using the [OpenSearch](https://opensearch.org/docs/latest/clients/python-low-level/) or [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/client/python-api/current/index.html) client
 * [test_common_protocols.py](src/maltest/tests/test_common_protocols.py) - querying the [Malcolm Field Aggregation API](https://idaholab.github.io/Malcolm/docs/api-aggregations.html), specifying a `from` query start time filter to search all historical data, a filter on `event.provider` to limit the result set to records from Zeek, and a `tags` filter to limit the matching records to the tags represented by the uploaded PCAPs (see above)
+
+When creating tests for `malcolm-test`, it's recommended to use [custom markers](https://docs.pytest.org/en/stable/example/markers.html#working-with-custom-markers) to group like tests into categories. More than one marker can be used to decorate a test. Some example markers include (but are not limited to; be judicious wise in choosing custom markers):
+
+* `@pytest.mark.mapi` - to indicate the test uses the [Malcolm API](https://cisagov.github.io/Malcolm/docs/api.html#API)
+* `@pytest.mark.netbox` - to indicate the test relies on NetBox (see also `NETBOX_ENRICH` above)
+* `@pytest.mark.pcap` - to indicate the test relies on uploaded PCAP artifacts (see also `UPLOAD_ARTIFACTS` above)
+* `@pytest.mark.arkime` - to indicate the test involves Arkime
+* `@pytest.mark.dashboards` - to indicate the test involves OpenSearch Dashboards
+* `@pytest.mark.carving` - to indicate the test involves Zeek file extraction ("carving")
+* etc.
+
+Using markers like this allows subsets of tests to be run, like in this example where only test with the `netbox` marker are selected:
+
+```bash
+$ malcolm-test \
+  --rm false \
+  --start false \
+  --sleep 0 \
+  --existing-vm malcolm-nearby-satyr \
+  --vm-provision-os false \
+  --vm-provision-malcolm false \
+  --run-tests \
+  --pcap-path /path/to/Malcolm-Test-PCAP \
+  -- -m netbox
+===================================================================================== test session starts =====================================================================================
+platform linux -- Python 3.12.7, pytest-8.3.3, pluggy-1.5.0
+rootdir: /home/tlacuache
+collected 7 items / 6 deselected / 1 selected                                                                                                                                                 
+
+<...>/site-packages/maltest/tests/test_cyberville.py .                                                                                [100%]
+
+=============================================================================== 1 passed, 6 deselected in 0.20s ===============================================================================
+
+```
