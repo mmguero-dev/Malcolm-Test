@@ -1,7 +1,7 @@
 import pytest
 
 
-@pytest.mark.mapi
+@pytest.mark.opensearch
 def test_malcolm_db_health(
     malcolm_url,
     database_objs,

@@ -1,7 +1,5 @@
 import pytest
 import requests
-import json
-import mmguero
 
 
 @pytest.mark.mapi

@@ -309,12 +309,13 @@ See the following tests for examples of how to access and use fixtures:
 
 When creating tests for `malcolm-test`, it's recommended to use [custom markers](https://docs.pytest.org/en/stable/example/markers.html#working-with-custom-markers) to group like tests into categories. More than one marker can be used to decorate a test. Some example markers include (but are not limited to; be judicious wise in choosing custom markers):
 
+* `@pytest.mark.arkime` - to indicate the test involves Arkime
+* `@pytest.mark.carving` - to indicate the test involves Zeek file extraction ("carving")
+* `@pytest.mark.dashboards` - to indicate the test involves OpenSearch Dashboards
 * `@pytest.mark.mapi` - to indicate the test uses the [Malcolm API](https://cisagov.github.io/Malcolm/docs/api.html#API)
 * `@pytest.mark.netbox` - to indicate the test relies on NetBox (see also `NETBOX_ENRICH` above)
+* `@pytest.mark.opensearch` - to indicate the test uses the OpenSearch/Elasticsearch API directly
 * `@pytest.mark.pcap` - to indicate the test relies on uploaded PCAP artifacts (see also `UPLOAD_ARTIFACTS` above)
-* `@pytest.mark.arkime` - to indicate the test involves Arkime
-* `@pytest.mark.dashboards` - to indicate the test involves OpenSearch Dashboards
-* `@pytest.mark.carving` - to indicate the test involves Zeek file extraction ("carving")
 * etc.
 
 Using markers like this allows subsets of tests to be run, like in this example where only test with the `netbox` marker are selected:
