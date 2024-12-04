@@ -7,7 +7,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.mapi
-def test_api_indices(
+def test_mapi_indices(
     malcolm_url,
     malcolm_http_auth,
 ):
