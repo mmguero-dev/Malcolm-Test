@@ -303,9 +303,11 @@ By default, `malcolm-test` instructs Malcolm to skip [NetBox enrichment](https:/
 
 See the following tests for examples of how to access and use fixtures:
 
-* [test_malcolm_response.py](src/maltest/tests/test_malcolm_response.py) - querying the [Malcolm API](https://idaholab.github.io/Malcolm/docs/api.html#API) using the [Requests](https://requests.readthedocs.io/en/latest/) library
-* [test_malcolm_db_health.py](src/maltest/tests/test_malcolm_db_health.py) - querying the [data store](https://idaholab.github.io/Malcolm/docs/opensearch-instances.html#OpenSearchInstance) directly using the [OpenSearch](https://opensearch.org/docs/latest/clients/python-low-level/) or [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/client/python-api/current/index.html) client
-* [test_common_protocols.py](src/maltest/tests/test_common_protocols.py) - querying the [Malcolm Field Aggregation API](https://idaholab.github.io/Malcolm/docs/api-aggregations.html), specifying a `from` query start time filter to search all historical data, a filter on `event.provider` to limit the result set to records from Zeek, and a `tags` filter to limit the matching records to the tags represented by the uploaded PCAPs (see above)
+* [test_connectivity.py](src/maltest/tests/test_connectivity.py)
+    - querying the [Malcolm API](https://idaholab.github.io/Malcolm/docs/api.html#API) using the [Requests](https://requests.readthedocs.io/en/latest/) library
+    - querying the [data store](https://idaholab.github.io/Malcolm/docs/opensearch-instances.html#OpenSearchInstance) directly using the [OpenSearch](https://opensearch.org/docs/latest/clients/python-low-level/) or [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/client/python-api/current/index.html) client
+* [test_common_protocols.py](src/maltest/tests/test_common_protocols.py)
+    - querying the [Malcolm Field Aggregation API](https://idaholab.github.io/Malcolm/docs/api-aggregations.html), specifying a `from` query start time filter to search all historical data, a filter on `event.provider` to limit the result set to records from Zeek, and a `tags` filter to limit the matching records to the tags represented by the uploaded PCAPs (see above)
 
 When creating tests for `malcolm-test`, it's recommended to use [custom markers](https://docs.pytest.org/en/stable/example/markers.html#working-with-custom-markers) to group like tests into categories. More than one marker can be used to decorate a test. Some example markers include (but are not limited to; be judicious wise in choosing custom markers):
 
