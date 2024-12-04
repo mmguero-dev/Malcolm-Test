@@ -316,6 +316,7 @@ When creating tests for `malcolm-test`, it's recommended to use [custom markers]
 * `@pytest.mark.netbox` - to indicate the test relies on NetBox (see also `NETBOX_ENRICH` above)
 * `@pytest.mark.opensearch` - to indicate the test uses the OpenSearch/Elasticsearch API directly
 * `@pytest.mark.pcap` - to indicate the test relies on uploaded PCAP artifacts (see also `UPLOAD_ARTIFACTS` above)
+* `@pytest.mark.webui` - to indicate the test checks some web user interface component of Malcolm
 * etc.
 
 Using markers like this allows subsets of tests to be run, like in this example where only test with the `netbox` marker are selected:
