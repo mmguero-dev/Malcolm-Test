@@ -123,6 +123,24 @@ def test_netbox_exists(
     assert 'NetBox' in soup.title.string
 
 
+@pytest.mark.netbox
+@pytest.mark.webui
+def test_netbox_health_plugin(
+    malcolm_url,
+    malcolm_http_auth,
+):
+    response = requests.get(
+        f"{malcolm_url}/netbox/plugins/netbox_healthcheck_plugin/healthcheck/?format=json",
+        headers={"Content-Type": "application/json"},
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    health = response.json()
+    assert health and all([v == "working" for k, v in health.items()])
+
+
 @pytest.mark.arkime
 @pytest.mark.webui
 def test_arkime_exists(
