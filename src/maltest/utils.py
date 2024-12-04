@@ -43,6 +43,9 @@ warnings.filterwarnings(
 # tests should define UPLOAD_ARTIFACTS for files (e.g., PCAPs) they need uploaded to Malcolm
 UPLOAD_ARTIFACT_LIST_NAME = 'UPLOAD_ARTIFACTS'
 
+# tests should define NETBOX_ENRICH=True for PCAPs to be netbox-enriched (default false)
+NETBOX_ENRICH_BOOL_NAME = "NETBOX_ENRICH"
+
 # parameters for checking that a Malcolm instance is ready
 MALCOLM_READY_TIMEOUT_SECONDS = 600
 MALCOLM_READY_CHECK_PERIOD_SECONDS = 30
@@ -343,7 +346,7 @@ class MalcolmTestCollection(object):
         testSetPreExec = MalcolmTestCollection()
         pytest.main(['--collect-only', '-p', 'no:terminal'], plugins=[testSetPreExec])
         if testSetPreExec.collected:
-            for pcapFile in testSetPreExec.PCAPsReferenced():
+            for pcapFile, pcapAttrs in testSetPreExec.PCAPsReferenced().items():
                 ...
 
     This allows for determining artifacts used by tests prior to running the tests themselves.
@@ -385,24 +388,45 @@ class MalcolmTestCollection(object):
         PCAPsReferenced: Process collected pytest test files by parsing them and looking for UPLOAD_ARTIFACTS,
         which are then collected into a set of all referenced artifacts to be uploaded.
         This can be used to upload these artifacts to Malcolm and make sure they finish processing prior to
-        running the tests that depend on them.
+        running the tests that depend on them. Other variables looked for include:
+            NETBOX_ENRICH - True to indicate that the PCAP should be NetBox-enriched, otherwise it will not be;
+                            sets "netbox" in PCAP sub-dict to True or False
 
         Args:
             None
 
         Returns:
-            A set of all files defined in UPLOAD_ARTIFACTS for all tests to be run
+            A dict of all files defined in UPLOAD_ARTIFACTS for all tests to be run, where the
+            key is the PCAP name and the value is a dict containing other relevant information, e.g.:
+            {
+                "foobar.pcap" : {
+                    "netbox": True
+                },
+                "barbaz.pcap" : {
+                    "netbox": False
+                },
+            }
         """
-        result = list()
+        result = dict()
         for testPyPath in self.collected:
             try:
+                testArtifactList = list()
+                testNetBoxEnrich = False
                 with open(testPyPath, "r") as f:
                     testPyContent = f.read()
                 for node in ast.walk(ast.parse(testPyContent)):
                     if isinstance(node, ast.Assign):
                         for target in node.targets:
-                            if isinstance(target, ast.Name) and (target.id == UPLOAD_ARTIFACT_LIST_NAME):
-                                result.append(ast.literal_eval(node.value))
+                            if isinstance(target, ast.Name):
+                                if target.id == UPLOAD_ARTIFACT_LIST_NAME:
+                                    testArtifactList.append(ast.literal_eval(node.value))
+                                elif target.id == NETBOX_ENRICH_BOOL_NAME:
+                                    testNetBoxEnrich = mmguero.str2bool(str(ast.literal_eval(node.value)))
+                for artifact in list(set(mmguero.Flatten(testArtifactList))):
+                    if artifact not in result:
+                        result[artifact] = defaultdict(lambda: None)
+                    if testNetBoxEnrich:
+                        result[artifact]["netbox"] = True
             except FileNotFoundError:
                 self.logger.error(f"Error: '{testPyPath}' not found")
             except SyntaxError:
@@ -411,7 +435,7 @@ class MalcolmTestCollection(object):
                 self.logger.error(f"Error: Unable to evaulate '{variable_name}' in '{testPyPath}': {ve}")
             except Exception as e:
                 self.logger.error(f"Error: '{testPyPath}': {e}")
-        return set(mmguero.Flatten(result))
+        return result
 
 
 ###################################################################################################
@@ -779,6 +803,8 @@ class MalcolmVM(object):
                             **self.dbObjs.DatabaseInitArgs,
                         ),
                         index=ARKIME_FILES_INDEX,
+                        # note that the query here is *foobar.pcap, so it will match both
+                        #   foobar.pcap and NBSITEID0,foobar.pcap
                     ).query("wildcard", name=f"*{os.path.basename(filename)}")
                     response = s.execute()
                     for hit in response:

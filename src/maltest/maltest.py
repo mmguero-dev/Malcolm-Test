@@ -405,15 +405,11 @@ def main():
                 )
 
                 # for the tests we're about to run, get the set of PCAP files referenced and upload them to Malcolm
-                pcaps = []
+                pcaps = {}
                 if testSetPreExec.collected:
                     pcaps = testSetPreExec.PCAPsReferenced()
-                    logging.debug(
-                        json.dumps(
-                            {'tests': list(testSetPreExec.collected), 'pcaps': list(testSetPreExec.PCAPsReferenced())}
-                        )
-                    )
-                    for pcapFile in pcaps:
+                    logging.debug(json.dumps({'tests': list(testSetPreExec.collected), 'pcaps': pcaps}))
+                    for pcapFile, pcapAttrs in pcaps.items():
                         pcapFilespec = pcapFile if os.path.isabs(pcapFile) else os.path.join(args.pcapPath, pcapFile)
                         pcapFileParts = os.path.splitext(pcapFilespec)
                         if pcapHash := shakey_file_hash(pcapFilespec):
@@ -427,7 +423,7 @@ def main():
                                     copyCode = malcolmVm.CopyFile(
                                         pcapFilespec,
                                         # TODO: Assuming the Malcolm directory like this might not be very robust
-                                        f'/home/{args.vmImageUsername}/Malcolm/pcap/upload/{pcapNewName}',
+                                        f"/home/{args.vmImageUsername}/Malcolm/pcap/upload/{'' if (pcapAttrs['netbox'] == True) else 'NBSITEID0,'}{pcapNewName}",
                                         tolerateFailure=True,
                                     )
                                     if copyCode == 0:

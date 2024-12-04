@@ -155,7 +155,6 @@ $ malcolm-test \
     --rm \
     --image malcolm-testing \
     --vm-provision-os false \
-    --vm-provision-malcolm false \
     --pcap-path /path/to/Malcolm-Test-PCAP
 ====================== test session starts ======================
 platform linux -- Python 3.13.0, pytest-8.3.3, pluggy-1.5.0
@@ -175,7 +174,6 @@ Explanation of arguments:
 * `--rm`: discard the VM after running the tests
 * `--image malcolm-testing`: use the `malcolm-testing` image already built instead of building one from scratch
 * `--vm-provision-os false`: since the image is already provisioned, skip VM provisioning steps
-* `--vm-provision-malcolm false`: since the image already configured Malcolm, skip Malcolm provisioning steps
 * `--pcap-path /path/to/Malcolm-Test-PCAP`: specify the path to the upload artifacts used by the tests
 
 #### <a name="LongRunning"></a> Starting a Malcolm VM and Leaving It Running For Subsequent Test Runs
@@ -190,7 +188,6 @@ $ malcolm-test \
     --rm \
     --image malcolm-testing \
     --vm-provision-os false \
-    --vm-provision-malcolm false \
     --run-tests false
 ```
 
@@ -200,7 +197,6 @@ Explanation of arguments:
 * `--rm`: discard the VM after shutting down
 * `--image malcolm-testing`: use the `malcolm-testing` image already built instead of building one from scratch
 * `--vm-provision-os false`: since the image is already provisioned, skip VM provisioning steps
-* `--vm-provision-malcolm false`: since the image already configured Malcolm, skip Malcolm provisioning steps
 * `--run-tests false`: don't run the tests with this instance of `malcolm-test`, just start Malcolm and wait
 
 In another shell session, connecting to the existing running Malcolm instance for a test run:
@@ -216,7 +212,6 @@ $ malcolm-test \
   --sleep 0 \
   --existing-vm malcolm-nearby-satyr \
   --vm-provision-os false \
-  --vm-provision-malcolm false \
   --run-tests \
   --pcap-path /path/to/Malcolm-Test-PCAP
 ====================== test session starts ======================
@@ -237,7 +232,7 @@ collected 4 items
 * `--sleep 0`: since Malcolm was already started, there is no need to sleep before beginning test execution
 * `--existing-vm malcolm-nearby-satyr`: specify the name of the existing running VM obtained by `virter vm ls`
 * `--vm-provision-os false`: since the image is already provisioned, skip VM provisioning steps
-* `--vm-provision-malcolm false`: since the image already configured Malcolm, skip Malcolm provisioning steps
+* `--vm-provision-malcolm false`: since the Malcolm instance is already configured, skip Malcolm provisioning steps
 * `--run-tests`: run the test suite
 * `--pcap-path /path/to/Malcolm-Test-PCAP`: specify the path to the upload artifacts used by the tests
 
@@ -299,6 +294,8 @@ def test_malcolm_pcap_hash(
 ```
 
 As PCAP files are uploaded to Malcolm by `malcolm-test`, they are [hashed](https://docs.python.org/3/library/hashlib.html#hashlib.shake_256) and stored in `pcap_hash_map` which maps the PCAP filename to its hash. The PCAP file is renamed to the hex-representation of the hash digest and the file extension (e.g., if the contents of `foobar.pcap` hashed to `52b92cdcec4af0e1`, the file would be uploaded as `52b92cdcec4af0e1.pcap`). This is done to ensure that conflicting PCAP filenames among different tests are resolved prior to processing. Since Malcolm automatically [assigns tags](https://idaholab.github.io/Malcolm/docs/upload.html#Tagging) to uploaded PCAP files, this hash should be used as a filter for the `tags` field for any network log-based queries for data related to that PCAP file. This way your tests can have reproducible outputs without being affected by PCAPs for other tests.
+
+By default, `malcolm-test` instructs Malcolm to skip [NetBox enrichment](https://idaholab.github.io/Malcolm/docs/upload.html#UploadNetBoxSite) for PCAPs found in `UPLOAD_ARTIFACTS`. To make a test perform NetBox enrichment for its PCAP (using the Malcolm instance's default NetBox site), set `NETBOX_ENRICH` to `True` in the test source.
 
 See the following tests for examples of how to access and use these fixtures:
 
