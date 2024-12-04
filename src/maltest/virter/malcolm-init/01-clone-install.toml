@@ -6,6 +6,7 @@ REPO_BRANCH = "main"
 
 VERBOSE = "false"
 CONFIGURE_ONLY = "false"
+EXTRA = ""
 RUNTIME = "docker"
 IMAGE_FILE = ""
 MALCOLM_PROFILE = "true"
@@ -75,8 +76,8 @@ VIRUSTOTAL_API_KEY = ""
 FILE_SCAN_RULE_UPDATE = "false"
 NETBOX = "true"
 NETBOX_ENRICH = "true"
-NETBOX_AUTOPOPULATE = "true"
-NETBOX_AUTO_PREFIXES = "true"
+NETBOX_AUTOPOPULATE = "false"
+NETBOX_AUTO_PREFIXES = "false"
 NETBOX_SITE_NAME = ""
 LIVE_CAPTURE_IFACE = ""
 LIVE_CAPTURE_FILTER = ""
@@ -117,6 +118,11 @@ ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.vimrc "
 ln -s -r -f "$HOME"/Malcolm/malcolm-iso/config/includes.chroot/etc/skel/.config/systemd/user/*.service "$HOME"/.config/systemd/user/
 
 OLD_GRUB_HASH=$(sha256sum /etc/default/grub | awk '{print $1}')
+
+EXTRA_ARRAY=()
+if [[ -n "$EXTRA" ]]; then
+  readarray -td '' EXTRA_ARRAY < <(awk '{ gsub(/\|/,"\0"); print; }' <<<"$EXTRA|"); unset 'EXTRA_ARRAY[-1]';
+fi
 
 pushd Malcolm
 python3 ./scripts/install.py --defaults \
@@ -202,7 +208,8 @@ python3 ./scripts/install.py --defaults \
     --live-capture-tcpdump "$LIVE_CAPTURE_TCPDUMP" \
     --live-capture-zeek "$LIVE_CAPTURE_ZEEK" \
     --live-capture-suricata "$LIVE_CAPTURE_SURICATA" \
-    --node-name "$NODE_NAME" || true
+    --node-name "$NODE_NAME" \
+    --extra "${EXTRA_ARRAY[@]}" || true
 
 if command -v direnv &>/dev/null; then
     eval "$(direnv hook bash)"

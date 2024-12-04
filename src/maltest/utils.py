@@ -503,6 +503,7 @@ class MalcolmVM(object):
                 'MALCOLM_REPO_URL',
                 'MALCOLM_REPO_BRANCH',
                 'MALCOLM_TEST_PATH',
+                'MALCOLM_TEST_PCAP_PATH',
                 'MALCOLM_AUTH_PASSWORD',
                 'MALCOLM_AUTH_USERNAME',
             )
@@ -1241,6 +1242,17 @@ class MalcolmVM(object):
             # now execute provisioning from the "malcolm init" directory
             for provisionFile in sorted(glob.glob(os.path.join(self.vmTomlMalcolmInitPath, '*.toml'))):
                 self.ProvisionFile(provisionFile)
+
+        # rsync the netbox database restore file to the VM if specified
+        if self.netboxRestoreFile:
+            if (
+                self.CopyFile(
+                    self.netboxRestoreFile,
+                    f'/home/{self.vmImageUsername}/Malcolm/netbox/preload/{os.path.basename(self.netboxRestoreFile)}',
+                )
+                != 0
+            ):
+                self.logger.warning(f"Error copying the NetBox backup file to ./netbox/preload")
 
         # sleep a bit, if indicated
         sleepCtr = 0

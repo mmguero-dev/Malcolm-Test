@@ -53,17 +53,20 @@ options:
                         Show script version and exit
 
 Malcolm Git repo:
-  -g, --github-url <string>
+  -g <string>, --github-url <string>
                         Malcolm repository url (e.g., https://github.com/idaholab/Malcolm)
-  -b, --github-branch <string>
+  -b <string>, --github-branch <string>
                         Malcolm repository branch (e.g., main)
 
 Virtual machine specifications:
-  -c, --cpus <integer>  Number of CPUs for virtual Malcolm instance
-  -m, --memory <integer>
+  -c <integer>, --cpus <integer>
+                        Number of CPUs for virtual Malcolm instance
+  -m <integer>, --memory <integer>
                         System memory (GB) for virtual Malcolm instance
-  -d, --disk <integer>  Disk size (GB) for virtual Malcolm instance
-  -i, --image <string>  Malcolm virtual instance base image name (e.g., debian-12)
+  -d <integer>, --disk <integer>
+                        Disk size (GB) for virtual Malcolm instance
+  -i <string>, --image <string>
+                        Malcolm virtual instance base image name (e.g., debian-12)
   --image-user <string>
                         Malcolm virtual instance base image username (e.g., debian)
   --vm-name-prefix <string>
@@ -75,7 +78,7 @@ Virtual machine specifications:
   --vm-provision-malcolm [true|false]
                         Perform VM provisioning (Malcolm-specific)
   --vm-provision-path <string>
-                        Path containing subdirectories with TOML files for VM provisioning
+                        Path containing subdirectories with TOML files for VM provisioning (e.g., /home/user/.local/lib/python3.12/site-packages/maltest/virter)
   --build-vm <string>   The name for a new VM image to build and commit instead of running one
   --build-vm-keep-layers [true|false]
                         Don't remove intermediate layers when building a new VM image
@@ -83,21 +86,23 @@ Virtual machine specifications:
 Malcolm runtime configuration:
   --container-image-file <string>
                         Malcolm container images .tar.xz file for installation (instead of "docker pull")
-  -s, --start [true|false]
+  --netbox-restore-file <string>
+                        NetBox backup file to place in ./netbox/preload/
+  -s [true|false], --start [true|false]
                         Start Malcolm once provisioning is complete (default true)
-  -r, --rm [true|false]
+  -r [true|false], --rm [true|false]
                         Remove virtual Malcolm instance after execution is complete
   --stay-up [true|false]
                         Stay running until CTRL+C or SIGKILL is received
   --sleep <integer>     Seconds to sleep after init before starting Malcolm (default 30)
 
 Testing configuration:
-  --test-path <string>  Path containing test definitions
-  -p, --pcap-path <string>
+  --test-path <string>  Path containing test definitions (e.g., /home/user/.local/lib/python3.12/site-packages/maltest/tests)
+  -p <string>, --pcap-path <string>
                         Path containing PCAP files used by tests (UPLOAD_ARTIFACTS in tests should resolve relative to this path)
-  -t, --run-tests [true|false]
+  -t [true|false], --run-tests [true|false]
                         Run test suite once Malcolm is started
-  -w, --wait-for-idle [true|false]
+  -w [true|false], --wait-for-idle [true|false]
                         Wait for ingest idle state before running tests
 ```
 

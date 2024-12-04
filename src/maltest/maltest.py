@@ -237,6 +237,15 @@ def main():
         help='Malcolm container images .tar.xz file for installation (instead of "docker pull")',
     )
     configArgGroup.add_argument(
+        '--netbox-restore-file',
+        required=False,
+        dest='netboxRestoreFile',
+        metavar='<string>',
+        type=str,
+        default='',
+        help='NetBox backup file to place in ./netbox/preload/',
+    )
+    configArgGroup.add_argument(
         '-s',
         '--start',
         dest='startMalcolm',
