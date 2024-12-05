@@ -10,8 +10,9 @@ UPLOAD_ARTIFACTS = [
     "protocols/HTTP_1.pcap",
 ]
 
+ARKIME_VIEW = "Arkime Sessions"
 EXPECTED_VIEWS = [
-    "Arkime Sessions",
+    ARKIME_VIEW,
     "Public IP Addresses",
     "Suricata Alerts",
     "Suricata Logs",
@@ -66,6 +67,67 @@ def test_arkime_sessions(
         response.raise_for_status()
         sessions = response.json()
         assert sessions.get("data", [])
+
+
+@pytest.mark.pcap
+@pytest.mark.arkime
+def test_arkime_connections(
+    malcolm_url,
+    malcolm_http_auth,
+    pcap_hash_map,
+):
+    response = requests.post(
+        f"{malcolm_url}/arkime/api/connections",
+        headers={"Content-Type": "application/json"},
+        json={
+            "date": "-1",
+            "expression": f"tags == [{','.join([pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    connections = response.json()
+    assert connections.get("links", [])
+    assert connections.get("nodes", [])
+
+
+@pytest.mark.pcap
+@pytest.mark.arkime
+def test_arkime_pcap_payload(
+    malcolm_url,
+    malcolm_http_auth,
+    pcap_hash_map,
+):
+    response = requests.post(
+        f"{malcolm_url}/arkime/api/sessions",
+        headers={"Content-Type": "application/json"},
+        json={
+            "date": "-1",
+            "order": "firstPacket:desc",
+            "view": ARKIME_VIEW,
+            "length": "10",
+            "expression": f"tags == [{','.join([pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}] && protocols == http && databytes >= 50000",
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    sessionsData = response.json().get("data")
+    assert sessionsData
+    sessionsIds = [x["id"] for x in sessionsData if "id" in x]
+    assert sessionsIds
+    response = requests.get(
+        f"{malcolm_url}/arkime/api/sessions/pcap/sessions.pcap",
+        params={"date": "-1", "ids": ','.join(sessionsIds)},
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    assert len(response.content) >= 500000
 
 
 @pytest.mark.pcap
