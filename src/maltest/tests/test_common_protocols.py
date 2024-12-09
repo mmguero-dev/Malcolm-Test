@@ -120,3 +120,31 @@ def test_common_protocols(
     }
     LOGGER.debug(buckets)
     assert all([(buckets.get(x, 0) > 0) for x in EXPECTED_DATASETS])
+
+
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_mapi_document_lookup(
+    malcolm_url,
+    malcolm_http_auth,
+    pcap_hash_map,
+):
+    response = requests.post(
+        f"{malcolm_url}/mapi/document",
+        headers={"Content-Type": "application/json"},
+        json={
+            "from": "0",
+            "limit": "2",
+            "filter": {
+                "event.provider": "zeek",
+                "tags": [pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+            },
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    docData = response.json()
+    LOGGER.debug(docData)
+    assert docData.get('results', [])
