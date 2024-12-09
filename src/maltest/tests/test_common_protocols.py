@@ -159,7 +159,6 @@ def zipped_chunks(response, chunk_size=65536):
         yield chunk
 
 
-@pytest.mark.inprog
 @pytest.mark.carving
 @pytest.mark.webui
 @pytest.mark.pcap
