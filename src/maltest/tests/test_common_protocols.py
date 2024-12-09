@@ -1,7 +1,11 @@
-import pytest
-import mmguero
-import requests
 import logging
+import mmguero
+import pytest
+import random
+import re
+import requests
+from bs4 import BeautifulSoup
+from stream_unzip import stream_unzip, AE_2, AES_256
 
 LOGGER = logging.getLogger(__name__)
 
@@ -148,3 +152,56 @@ def test_mapi_document_lookup(
     docData = response.json()
     LOGGER.debug(docData)
     assert docData.get('results', [])
+
+
+def zipped_chunks(response, chunk_size=65536):
+    for chunk in response.iter_content(chunk_size=chunk_size):
+        yield chunk
+
+
+@pytest.mark.inprog
+@pytest.mark.carving
+@pytest.mark.webui
+@pytest.mark.pcap
+def test_extracted_files_download(
+    malcolm_url,
+    malcolm_http_auth,
+):
+    response = requests.get(
+        f"{malcolm_url}/extracted-files/quarantine",
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    soup = BeautifulSoup(response.content, 'html.parser')
+    exePattern = re.compile(r'\.exe$')
+    urls = [link['href'] for link in soup.find_all('a', href=exePattern)]
+    LOGGER.debug(urls)
+    assert urls
+    response = requests.get(
+        f"{malcolm_url}/extracted-files/quarantine/{random.choice(urls)}",
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    assert len(response.content) > 1000
+    for fileName, fileSize, unzippedChunks in stream_unzip(
+        zipped_chunks(response),
+        password=b'infected',
+        allowed_encryption_mechanisms=(
+            AE_2,
+            AES_256,
+        ),
+    ):
+        bytesSize = 0
+        with mmguero.TemporaryFilename(suffix='.exe') as exeFileName:
+            with open(exeFileName, 'wb') as exeFile:
+                for chunk in unzippedChunks:
+                    bytesSize = bytesSize + len(chunk)
+                    exeFile.write(chunk)
+        LOGGER.debug(f"{fileName.decode('utf-8')} {len(response.content)} -> {bytesSize})")
+        assert fileName
+        assert unzippedChunks
+        assert bytesSize
