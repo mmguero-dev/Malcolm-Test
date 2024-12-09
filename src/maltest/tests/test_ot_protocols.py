@@ -142,5 +142,5 @@ def test_ot_protocols(
     buckets = {
         item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), ['event.dataset', 'buckets'], [])
     }
-    LOGGER.info(buckets)
+    LOGGER.debug(buckets)
     assert all([(buckets.get(x, 0) > 0) for x in EXPECTED_DATASETS])

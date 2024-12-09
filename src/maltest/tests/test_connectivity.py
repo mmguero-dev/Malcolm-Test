@@ -1,11 +1,15 @@
 import pytest
 import requests
+import logging
+
+LOGGER = logging.getLogger(__name__)
 
 
 @pytest.mark.vm
 def test_vm_exists(
     malcolm_vm_info,
 ):
+    LOGGER.debug(malcolm_vm_info)
     assert isinstance(malcolm_vm_info, dict) and malcolm_vm_info.get("ip", None)
 
 
@@ -21,7 +25,9 @@ def test_ping(
         verify=False,
     )
     response.raise_for_status()
-    assert response.json().get('ping', '') == 'pong'
+    responseData = response.json()
+    LOGGER.debug(responseData)
+    assert responseData.get('ping', '') == 'pong'
 
 
 @pytest.mark.opensearch
@@ -38,4 +44,5 @@ def test_db_health(
             **dbObjs.DatabaseInitArgs,
         ).cluster.health()
     )
+    LOGGER.debug(healthDict)
     assert healthDict.get("status", "unknown") in ["green", "yellow"]

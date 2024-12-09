@@ -1,6 +1,14 @@
 import pytest
 import requests
 from bs4 import BeautifulSoup
+import logging
+import re
+
+LOGGER = logging.getLogger(__name__)
+
+
+def DebugSoupLine(soup):
+    return "\n".join([re.sub(r'\s+', ' ', line.strip()) for line in soup.get_text().splitlines() if line.strip()])
 
 
 @pytest.mark.webui
@@ -16,6 +24,7 @@ def test_local_account_management_page_exists(
     )
     response.raise_for_status()
     soup = BeautifulSoup(response.content, 'html.parser')
+    LOGGER.debug(DebugSoupLine(soup))
     assert soup.title.string == "Malcolm User Management"
 
 
@@ -32,6 +41,7 @@ def test_upload_page_exists(
     )
     response.raise_for_status()
     soup = BeautifulSoup(response.content, 'html.parser')
+    LOGGER.debug(DebugSoupLine(soup))
     assert soup.title.string == "File Upload"
 
 
@@ -48,6 +58,7 @@ def test_landing_page_exists(
     )
     response.raise_for_status()
     soup = BeautifulSoup(response.content, 'html.parser')
+    LOGGER.debug(DebugSoupLine(soup))
     assert "Read the Malcolm user guide" in soup.get_text()
 
 
@@ -64,6 +75,7 @@ def test_documentation_exists(
     )
     response.raise_for_status()
     soup = BeautifulSoup(response.content, 'html.parser')
+    LOGGER.debug(DebugSoupLine(soup))
     assert (
         "A powerful, easily deployable network traffic analysis tool suite for network security monitoring"
         in soup.get_text()
@@ -85,6 +97,7 @@ def test_dashboards_exists(
     )
     response.raise_for_status()
     soup = BeautifulSoup(response.content, 'html.parser')
+    LOGGER.debug(DebugSoupLine(soup))
     assert soup.title.string == "Malcolm Dashboards"
 
 
@@ -103,6 +116,7 @@ def test_dashboards_maps_exists(
     )
     response.raise_for_status()
     geo = response.json()
+    LOGGER.debug(geo)
     assert (geo.get('type', '') == 'FeatureCollection') and (geo.get('features', []))
 
 
@@ -120,6 +134,7 @@ def test_netbox_exists(
     )
     response.raise_for_status()
     soup = BeautifulSoup(response.content, 'html.parser')
+    LOGGER.debug(DebugSoupLine(soup))
     assert 'NetBox' in soup.title.string
 
 
@@ -138,6 +153,7 @@ def test_netbox_health_plugin(
     )
     response.raise_for_status()
     health = response.json()
+    LOGGER.debug(health)
     assert health and all([v == "working" for k, v in health.items()])
 
 
@@ -155,6 +171,7 @@ def test_arkime_exists(
     )
     response.raise_for_status()
     soup = BeautifulSoup(response.content, 'html.parser')
+    LOGGER.debug(DebugSoupLine(soup))
     assert soup.title.string == "Arkime"
 
 
@@ -171,6 +188,7 @@ def test_cyberchef_exists(
     )
     response.raise_for_status()
     soup = BeautifulSoup(response.content, 'html.parser')
+    LOGGER.debug(DebugSoupLine(soup))
     assert soup.title.string == "CyberChef"
 
 
@@ -188,4 +206,5 @@ def test_extracted_files_exists(
     )
     response.raise_for_status()
     soup = BeautifulSoup(response.content, 'html.parser')
+    LOGGER.debug(DebugSoupLine(soup))
     assert "Directory listing for" in soup.get_text()

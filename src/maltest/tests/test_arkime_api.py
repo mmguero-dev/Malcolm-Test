@@ -2,7 +2,6 @@ import pytest
 import mmguero
 import requests
 import logging
-import json
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,6 +39,7 @@ def test_arkime_views(
     )
     response.raise_for_status()
     views = [x.get("name") for x in mmguero.DeepGet(response.json(), ["data"], []) if 'name' in x]
+    LOGGER.debug(views)
     assert all(x in views for x in EXPECTED_VIEWS)
 
 
@@ -66,6 +66,7 @@ def test_arkime_sessions(
         )
         response.raise_for_status()
         sessions = response.json()
+        LOGGER.debug(sessions)
         assert sessions.get("data", [])
 
 
@@ -89,6 +90,7 @@ def test_arkime_connections(
     )
     response.raise_for_status()
     connections = response.json()
+    LOGGER.debug(connections)
     assert connections.get("links", [])
     assert connections.get("nodes", [])
 
@@ -127,6 +129,7 @@ def test_arkime_pcap_payload(
         verify=False,
     )
     response.raise_for_status()
+    LOGGER.debug(f"{','.join(sessionsIds)}: {len(response.content)}")
     assert len(response.content) >= 500000
 
 
@@ -153,6 +156,7 @@ def test_arkime_spiview(
     )
     response.raise_for_status()
     spiview = response.json().get("spi", [])
+    LOGGER.debug(spiview)
     assert spiview
 
 
@@ -179,6 +183,7 @@ def test_arkime_spigraph(
     )
     response.raise_for_status()
     spigraph = response.json().get("items", [])
+    LOGGER.debug(spigraph)
     assert spigraph
 
 
@@ -197,6 +202,7 @@ def test_arkime_files(
     )
     response.raise_for_status()
     files = mmguero.DeepGet(response.json(), ["data"], [])
+    LOGGER.debug(files)
     assert files
 
 
@@ -214,6 +220,7 @@ def test_arkime_fields(
     )
     response.raise_for_status()
     fields = response.json()
+    LOGGER.debug(fields)
     assert fields
 
 
@@ -231,6 +238,7 @@ def test_arkime_valueactions(
     )
     response.raise_for_status()
     valueactions = response.json()
+    LOGGER.debug(valueactions)
     assert valueactions
 
 
@@ -248,6 +256,7 @@ def test_arkime_fieldactions(
     )
     response.raise_for_status()
     fieldactions = response.json()
+    LOGGER.debug(fieldactions)
     assert fieldactions
 
 
@@ -273,4 +282,5 @@ def test_arkime_unique(
     )
     response.raise_for_status()
     unique = response.content.decode().splitlines()
+    LOGGER.debug(unique)
     assert all([x in unique for x in EXPECTED_EVENT_PROVIDERS])
