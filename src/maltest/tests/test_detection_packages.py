@@ -142,11 +142,6 @@ UPLOAD_ARTIFACTS = [
     "plugins/SIGred/cve-2020-1350_with_tcp_handshake.pcap",
 ]
 
-# TODO
-# corelight/hassh
-# corelight/http-more-files-names
-# corelight/zeek-xor-exe-plugin
-# cybera/zeek-sniffpass
 
 EXPECTED_CATEGORIES = [
     # mmguero-dev/bzar and cisagov/acid
@@ -225,6 +220,7 @@ def test_detection_packages(
         f"{malcolm_url}/mapi/agg/rule.category",
         headers={"Content-Type": "application/json"},
         json={
+            # lol
             "from": "2000 years ago",
             "filter": {
                 "event.provider": "zeek",
@@ -243,3 +239,91 @@ def test_detection_packages(
     LOGGER.debug(buckets)
     LOGGER.debug([x for x in EXPECTED_CATEGORIES if (buckets.get(x, 0) == 0)])
     assert all([(buckets.get(x, 0) > 0) for x in EXPECTED_CATEGORIES])
+
+
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_hassh_package(
+    malcolm_http_auth,
+    malcolm_url,
+    pcap_hash_map,
+):
+    response = requests.post(
+        f"{malcolm_url}/mapi/agg/zeek.ssh.hassh",
+        headers={"Content-Type": "application/json"},
+        json={
+            "from": "0",
+            "filter": {
+                "tags": pcap_hash_map["protocols/SSH.pcap"],
+                "!zeek.ssh.hassh": None,
+            },
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    buckets = {
+        item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), ['zeek.ssh.hassh', 'buckets'], [])
+    }
+    LOGGER.debug(buckets)
+    assert buckets
+
+
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_xor_decrypt_package(
+    malcolm_http_auth,
+    malcolm_url,
+    pcap_hash_map,
+):
+    response = requests.post(
+        f"{malcolm_url}/mapi/agg/file.path",
+        headers={"Content-Type": "application/json"},
+        json={
+            "from": "0",
+            "filter": {
+                "tags": pcap_hash_map["plugins/zeek-xor-exe-plugin/2015-04-09-Nuclear-EK-traffic.pcap"],
+                "file.source": "XOR decrypted",
+            },
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    buckets = {
+        item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), ['file.path', 'buckets'], [])
+    }
+    LOGGER.debug(buckets)
+    assert buckets
+
+
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_http_sniffpass(
+    malcolm_http_auth,
+    malcolm_url,
+    pcap_hash_map,
+):
+    response = requests.post(
+        f"{malcolm_url}/mapi/agg/zeek.http.post_username",
+        headers={"Content-Type": "application/json"},
+        json={
+            "from": "0",
+            "filter": {
+                "tags": pcap_hash_map["plugins/zeek-sniffpass/http_post.trace"],
+                "!zeek.http.post_username": None,
+            },
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    buckets = {
+        item['key']: item['doc_count']
+        for item in mmguero.DeepGet(response.json(), ['zeek.http.post_username', 'buckets'], [])
+    }
+    LOGGER.debug(buckets)
+    assert buckets
