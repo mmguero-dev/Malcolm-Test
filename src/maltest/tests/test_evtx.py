@@ -287,7 +287,6 @@ UPLOAD_ARTIFACTS = [
 ]
 
 
-@pytest.mark.inprog
 @pytest.mark.mapi
 @pytest.mark.pcap
 def test_all_evtx(
