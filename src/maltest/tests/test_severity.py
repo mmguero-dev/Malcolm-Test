@@ -1,0 +1,87 @@
+import logging
+import mmguero
+import pytest
+import requests
+
+LOGGER = logging.getLogger(__name__)
+
+UPLOAD_ARTIFACTS = [
+    "other/Cyberville.pcap",
+    "protocols/DNS.pcap",
+    "protocols/FTP.pcap",
+    "protocols/HTTP_1.pcap",
+    "protocols/HTTP_2.pcap",
+    "protocols/S7comm.pcap",
+    "protocols/SMB.pcap",
+    "protocols/OpenVPN.pcap",
+]
+
+EXPECTED_SEVERITY_TAGS = [
+    "Cleartext password",
+    "Connection aborted (originator)",
+    "Connection aborted (responder)",
+    "Connection attempt rejected",
+    "Connection attempt, no reply",
+    "Cross-segment traffic",
+    "External traffic",
+    "File transfer (high concern)",
+    "File transfer (medium concern)",
+    # "File transfer",
+    # "High entropy domain",
+    "High volume connection",
+    "Inbound traffic",
+    "Insecure or outdated protocol",
+    # "Intelligence",
+    # "Internal traffic",
+    "Long connection",
+    "MITRE ATT&CK for ICS framework tactic or technique",
+    "MITRE ATT&CK framework tactic or technique",
+    "Notice (other)",
+    "Notice (protocol)",
+    "Notice (scan)",
+    "Notice (vulnerability)",
+    "Outbound traffic",
+    "Sensitive country",
+    "Service on non-standard port",
+    "Signature (capa)",
+    "Signature (ClamAV)",
+    "Signature (YARA)",
+    "Signature",
+    "Suricata Alert",
+    "Tunneled traffic",
+    "VPN traffic",
+    "Weird",
+]
+
+
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_severity_tags(
+    malcolm_http_auth,
+    malcolm_url,
+    pcap_hash_map,
+):
+    assert all([pcap_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
+
+    response = requests.post(
+        f"{malcolm_url}/mapi/agg/event.severity_tags",
+        headers={"Content-Type": "application/json"},
+        json={
+            "from": "0",
+            "filter": {
+                "tags": [pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                "!event.severity_tags": None,
+            },
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    buckets = {
+        item['key']: item['doc_count']
+        for item in mmguero.DeepGet(response.json(), ['event.severity_tags', 'buckets'], [])
+    }
+    LOGGER.debug(buckets)
+    LOGGER.debug([x for x in EXPECTED_SEVERITY_TAGS if (buckets.get(x, 0) == 0)])
+    assert all([(buckets.get(x, 0) > 0) for x in EXPECTED_SEVERITY_TAGS])
