@@ -92,6 +92,7 @@ UPLOAD_ARTIFACTS = [
     "plugins/http-more-files-names/http-filename-and-etag.pcap",
     "plugins/http-more-files-names/http-filename.pcap",
     # corelight/ripple20
+    "protocols/HTTP_1.pcap",
     "plugins/ripple20/dns_caa_records.pcap",
     "plugins/ripple20/dns_hip_invalid_character.pcap",
     "plugins/ripple20/dns_long_cname.pcap",
@@ -199,8 +200,7 @@ EXPECTED_CATEGORIES = [
     # corelight/zeek-quasarrat-detector
     "QuasarRAT",
     # corelight/ripple20
-    # TODO: why won't this one show up?!?!
-    # "Ripple20",
+    "Ripple20",
     # ncsa/bro-simple-scan
     "Scan",
     # corelight/zeek-strrat-detector
