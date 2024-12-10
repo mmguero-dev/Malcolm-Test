@@ -329,6 +329,16 @@ def main():
         default=True,
         help=f'Wait for ingest idle state before running tests',
     )
+    testArgGroup.add_argument(
+        '--no-upload',
+        dest='noUpload',
+        type=mmguero.str2bool,
+        nargs='?',
+        metavar="true|false",
+        const=True,
+        default=True,
+        help=f"Don't actually upload artifacts",
+    )
 
     if len(sys.argv) == 1:
         mmguero.eprint(f'{MALTEST_PROJECT_NAME} v{importlib.metadata.version(MALTEST_PROJECT_NAME)}')
@@ -408,16 +418,23 @@ def main():
 
                 # for the tests we're about to run, get the set of PCAP files referenced and upload them to Malcolm
                 pcaps = {}
+                hasEvtxFiles = False
                 if testSetPreExec.collected:
                     pcaps = testSetPreExec.PCAPsReferenced()
                     logging.debug(json.dumps({'tests': list(testSetPreExec.collected), 'pcaps': pcaps}))
                     for pcapFile, pcapAttrs in pcaps.items():
                         pcapFilespec = pcapFile if os.path.isabs(pcapFile) else os.path.join(args.pcapPath, pcapFile)
                         pcapFileParts = os.path.splitext(pcapFilespec)
+                        if fileIsEvtx := (pcapFileParts[1].lower() == '.evtx'):
+                            hasEvtxFiles = True
                         if pcapHash := shakey_file_hash(pcapFilespec):
                             pcapNewName = pcapHash + pcapFileParts[1]
                             if ShuttingDown[0] == False:
-                                if malcolmVm.ArkimeAlreadyHasFile(pcapNewName):
+                                if args.noUpload or (
+                                    # TODO: is there a way we can detect duplicate EVTX files?
+                                    (fileIsEvtx == False)
+                                    and malcolmVm.ArkimeAlreadyHasFile(pcapNewName)
+                                ):
                                     # we've already uploaded this file, so we don't need to upload it again
                                     set_pcap_hash(pcapFile, pcapHash)
                                 else:
@@ -432,8 +449,11 @@ def main():
                                         set_pcap_hash(pcapFile, pcapHash)
 
                 # wait for all logs to finish being ingested into the system
-                if pcaps and args.waitForIdle and (not malcolmVm.WaitForLastEventTime()):
-                    logging.warning(f"Malcolm instance never achieved idle state after inserting events")
+                if pcaps and args.waitForIdle:
+                    if not malcolmVm.WaitForLastEventTime():
+                        logging.warning(f"Malcolm instance never achieved idle state after inserting network logs")
+                    elif hasEvtxFiles and (not malcolmVm.WaitForLastEventTime(doctype='host')):
+                        logging.warning(f"Malcolm instance never achieved idle state after inserting EVTX logs")
 
                 # run the tests
                 if ShuttingDown[0] == False:

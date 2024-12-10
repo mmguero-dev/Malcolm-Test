@@ -6,7 +6,7 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 UPLOAD_ARTIFACTS = [
-    "protocols/HTTP_1.pcap",
+    "pcap/protocols/HTTP_1.pcap",
 ]
 
 ARKIME_VIEW = "Arkime Sessions"

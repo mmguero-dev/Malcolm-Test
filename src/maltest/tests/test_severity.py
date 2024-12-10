@@ -6,14 +6,13 @@ import requests
 LOGGER = logging.getLogger(__name__)
 
 UPLOAD_ARTIFACTS = [
-    "other/Cyberville.pcap",
-    "protocols/DNS.pcap",
-    "protocols/FTP.pcap",
-    "protocols/HTTP_1.pcap",
-    "protocols/HTTP_2.pcap",
-    "protocols/S7comm.pcap",
-    "protocols/SMB.pcap",
-    "protocols/OpenVPN.pcap",
+    "pcap/protocols/DNS.pcap",
+    "pcap/protocols/FTP.pcap",
+    "pcap/protocols/HTTP_1.pcap",
+    "pcap/protocols/HTTP_2.pcap",
+    "pcap/protocols/S7comm.pcap",
+    "pcap/protocols/SMB.pcap",
+    "pcap/protocols/OpenVPN.pcap",
 ]
 
 EXPECTED_SEVERITY_TAGS = [

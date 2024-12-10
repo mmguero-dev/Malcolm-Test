@@ -704,6 +704,7 @@ class MalcolmVM(object):
         self,
         lastDocIngestAge=MALCOLM_LAST_INGEST_AGE_SECONDS_THRESHOLD,
         timeout=MALCOLM_LAST_INGEST_AGE_SECONDS_TIMEOUT,
+        doctype='network',
     ):
         """
         WaitForLastEventTime: Wait until the last time Malcolm processed a network traffic log is at least
@@ -714,6 +715,7 @@ class MalcolmVM(object):
             lastDocIngestAge - the number of seconds in the past the most recently-ingested network traffic log
                                must be before returning True
             timeout - to avoid waiting forever, return regardless if the time exceeds this number of seconds
+            doctype - network|host (for MALCOLM_NETWORK_INDEX_PATTERN vs MALCOLM_OTHER_INDEX_PATTERN)
 
         Returns:
             True if the most recentlyly-ingested log was ingested at least lastDocIngestAge ago, False on timeout
@@ -731,7 +733,7 @@ class MalcolmVM(object):
                 try:
                     # check the ingest statistics which returns a dict of host.name -> event.ingested
                     response = self.apiSession.get(
-                        f"{url}/mapi/ingest-stats",
+                        f"{url}/mapi/ingest-stats?doctype={doctype}",
                         allow_redirects=True,
                         auth=auth,
                         verify=False,

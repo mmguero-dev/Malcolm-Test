@@ -6,20 +6,20 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 UPLOAD_ARTIFACTS = [
-    "protocols/BACnet.pcap",
-    "protocols/BSAP.pcap",
-    "protocols/DNP3.pcap",
-    "protocols/ENIP.pcap",
-    "protocols/ETHERCAT.pcap",
-    "protocols/GENISYS.pcap",
-    "protocols/HARTIP.pcap",
-    "protocols/Modbus.pcap",
-    "protocols/MQTT.pcap",
-    "protocols/OPCUA-Binary.pcap",
-    "protocols/PROFINET.pcap",
-    "protocols/S7comm.pcap",
-    "protocols/Synchrophasor.pcap",
-    "protocols/TDS.pcap",
+    "pcap/protocols/BACnet.pcap",
+    "pcap/protocols/BSAP.pcap",
+    "pcap/protocols/DNP3.pcap",
+    "pcap/protocols/ENIP.pcap",
+    "pcap/protocols/ETHERCAT.pcap",
+    "pcap/protocols/GENISYS.pcap",
+    "pcap/protocols/HARTIP.pcap",
+    "pcap/protocols/Modbus.pcap",
+    "pcap/protocols/MQTT.pcap",
+    "pcap/protocols/OPCUA-Binary.pcap",
+    "pcap/protocols/PROFINET.pcap",
+    "pcap/protocols/S7comm.pcap",
+    "pcap/protocols/Synchrophasor.pcap",
+    "pcap/protocols/TDS.pcap",
 ]
 
 # TODO:
