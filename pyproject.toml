@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "malcolm-test"
-version = "0.7.1"
+version = "0.8.0"
 authors = [
   { name="Seth Grover", email="mero.mero.guero@gmail.com" },
 ]
@@ -25,6 +25,7 @@ dependencies = [
     'petname==2.6',
     'psutil==6.1.0',
     'pytest==8.3.3',
+    'python-magic==0.4.27',
     'requests==2.32.3',
     'stream-unzip==0.0.99',
     'tomli-w==1.1.0',
@@ -34,6 +35,8 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/idaholab/malcolm-test"
 Issues = "https://github.com/idaholab/malcolm-test/issues"
+Artifacts = "https://github.com/idaholab/malcolm-test-artifacts"
+PyPI = "https://pypi.org/project/malcolm-test/"
 
 [project.scripts]
 malcolm-test = "maltest:main"

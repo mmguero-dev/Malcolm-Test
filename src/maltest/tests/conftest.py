@@ -10,7 +10,7 @@ import pytest
 
 from maltest.utils import (
     get_malcolm_vm_info,
-    get_pcap_hash_map,
+    get_artifact_hash_map,
     get_malcolm_http_auth,
     get_malcolm_url,
     get_database_objs,
@@ -29,14 +29,14 @@ def malcolm_vm_info():
 
 
 @pytest.fixture
-def pcap_hash_map():
+def artifact_hash_map():
     """
-    pcap_hash_map: fixture wrapping .utils.get_pcap_hash_map
+    artifact_hash_map: fixture wrapping .utils.get_artifact_hash_map
 
     Returns:
-        see .utils.get_pcap_hash_map
+        see .utils.get_artifact_hash_map
     """
-    yield get_pcap_hash_map()
+    yield get_artifact_hash_map()
 
 
 @pytest.fixture

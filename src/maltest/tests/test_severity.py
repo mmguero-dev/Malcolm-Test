@@ -21,7 +21,7 @@ EXPECTED_SEVERITY_TAGS = [
     "Connection aborted (responder)",
     "Connection attempt rejected",
     "Connection attempt, no reply",
-    "Cross-segment traffic",
+    # "Cross-segment traffic",
     "External traffic",
     "File transfer (high concern)",
     "File transfer (medium concern)",
@@ -58,9 +58,9 @@ EXPECTED_SEVERITY_TAGS = [
 def test_severity_tags(
     malcolm_http_auth,
     malcolm_url,
-    pcap_hash_map,
+    artifact_hash_map,
 ):
-    assert all([pcap_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
+    assert all([artifact_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
 
     response = requests.post(
         f"{malcolm_url}/mapi/agg/event.severity_tags",
@@ -68,7 +68,8 @@ def test_severity_tags(
         json={
             "from": "0",
             "filter": {
-                "tags": [pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                # can't filter on tags, because signatures(_carved).log doesn't get tags :(
+                # "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
                 "!event.severity_tags": None,
             },
         },

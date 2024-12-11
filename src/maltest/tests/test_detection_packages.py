@@ -212,9 +212,9 @@ EXPECTED_CATEGORIES = [
 def test_detection_packages(
     malcolm_http_auth,
     malcolm_url,
-    pcap_hash_map,
+    artifact_hash_map,
 ):
-    assert all([pcap_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
+    assert all([artifact_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
 
     response = requests.post(
         f"{malcolm_url}/mapi/agg/rule.category",
@@ -225,7 +225,7 @@ def test_detection_packages(
             "filter": {
                 "event.provider": "zeek",
                 "event.dataset": "notice",
-                "tags": [pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
             },
         },
         allow_redirects=True,
@@ -246,7 +246,7 @@ def test_detection_packages(
 def test_hassh_package(
     malcolm_http_auth,
     malcolm_url,
-    pcap_hash_map,
+    artifact_hash_map,
 ):
     response = requests.post(
         f"{malcolm_url}/mapi/agg/zeek.ssh.hassh",
@@ -254,7 +254,7 @@ def test_hassh_package(
         json={
             "from": "0",
             "filter": {
-                "tags": pcap_hash_map["pcap/protocols/SSH.pcap"],
+                "tags": artifact_hash_map["pcap/protocols/SSH.pcap"],
                 "!zeek.ssh.hassh": None,
             },
         },
@@ -275,7 +275,7 @@ def test_hassh_package(
 def test_xor_decrypt_package(
     malcolm_http_auth,
     malcolm_url,
-    pcap_hash_map,
+    artifact_hash_map,
 ):
     response = requests.post(
         f"{malcolm_url}/mapi/agg/file.path",
@@ -283,7 +283,7 @@ def test_xor_decrypt_package(
         json={
             "from": "0",
             "filter": {
-                "tags": pcap_hash_map["pcap/plugins/zeek-xor-exe-plugin/2015-04-09-Nuclear-EK-traffic.pcap"],
+                "tags": artifact_hash_map["pcap/plugins/zeek-xor-exe-plugin/2015-04-09-Nuclear-EK-traffic.pcap"],
                 "file.source": "XOR decrypted",
             },
         },
@@ -304,7 +304,7 @@ def test_xor_decrypt_package(
 def test_http_sniffpass(
     malcolm_http_auth,
     malcolm_url,
-    pcap_hash_map,
+    artifact_hash_map,
 ):
     response = requests.post(
         f"{malcolm_url}/mapi/agg/zeek.http.post_username",
@@ -312,7 +312,7 @@ def test_http_sniffpass(
         json={
             "from": "0",
             "filter": {
-                "tags": pcap_hash_map["pcap/plugins/zeek-sniffpass/http_post.trace"],
+                "tags": artifact_hash_map["pcap/plugins/zeek-sniffpass/http_post.trace"],
                 "!zeek.http.post_username": None,
             },
         },

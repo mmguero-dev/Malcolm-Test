@@ -100,9 +100,9 @@ EXPECTED_DATASETS = [
 def test_common_protocols(
     malcolm_http_auth,
     malcolm_url,
-    pcap_hash_map,
+    artifact_hash_map,
 ):
-    assert all([pcap_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
+    assert all([artifact_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
 
     response = requests.post(
         f"{malcolm_url}/mapi/agg/event.dataset",
@@ -111,7 +111,7 @@ def test_common_protocols(
             "from": "0",
             "filter": {
                 "event.provider": "zeek",
-                "tags": [pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
             },
         },
         allow_redirects=True,
@@ -131,7 +131,7 @@ def test_common_protocols(
 def test_mapi_document_lookup(
     malcolm_url,
     malcolm_http_auth,
-    pcap_hash_map,
+    artifact_hash_map,
 ):
     response = requests.post(
         f"{malcolm_url}/mapi/document",
@@ -141,7 +141,7 @@ def test_mapi_document_lookup(
             "limit": "2",
             "filter": {
                 "event.provider": "zeek",
-                "tags": [pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
             },
         },
         allow_redirects=True,

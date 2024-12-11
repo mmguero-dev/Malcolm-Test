@@ -8,11 +8,13 @@ malcolm-test module containing the CLI interface and high-level execution logic
 import argparse
 import json
 import logging
+import magic
 import mmguero
 import multiprocessing
 import os
 import psutil
 import pytest
+import re
 import signal
 import sys
 
@@ -23,7 +25,7 @@ from maltest.utils import (
     MalcolmTestCollection,
     MalcolmVM,
     set_malcolm_vm_info,
-    set_pcap_hash,
+    set_artifact_hash,
     shakey_file_hash,
     ShuttingDown,
 )
@@ -298,14 +300,14 @@ def main():
         help=f'Path containing test definitions (e.g., {os.path.join(script_path, 'tests')})',
     )
     testArgGroup.add_argument(
-        '-p',
-        '--pcap-path',
+        '-a',
+        '--artifacts-path',
         required=False,
-        dest='pcapPath',
+        dest='artifactsPath',
         metavar='<string>',
         type=str,
-        default=os.getenv('MALCOLM_TEST_PCAP_PATH', ''),
-        help=f'Path containing PCAP files used by tests (UPLOAD_ARTIFACTS in tests should resolve relative to this path)',
+        default=os.getenv('MALCOLM_TEST_ARTIFACTS_PATH', ''),
+        help=f'Path containing artifacts used by tests (UPLOAD_ARTIFACTS in tests should resolve relative to this path)',
     )
     testArgGroup.add_argument(
         '-t',
@@ -336,7 +338,7 @@ def main():
         nargs='?',
         metavar="true|false",
         const=True,
-        default=True,
+        default=False,
         help=f"Don't actually upload artifacts",
     )
 
@@ -372,8 +374,8 @@ def main():
         mmguero.eprint(f'{MALTEST_PROJECT_NAME} v{importlib.metadata.version(MALTEST_PROJECT_NAME)}')
         return 0
 
-    if (not args.vmBuildName) and (not os.path.isdir(args.pcapPath)):
-        logging.error('PCAP path must be specified with -p/--pcap-path or MALCOLM_TEST_PCAP_PATH')
+    if (not args.vmBuildName) and (not os.path.isdir(args.artifactsPath)):
+        logging.error('Artifacts path must be specified with -a/--artifacts-path or MALCOLM_TEST_ARTIFACTS_PATH')
         return 1
 
     # the whole thing runs on virter, so if we don't have that what are we even doing here
@@ -417,42 +419,52 @@ def main():
                 )
 
                 # for the tests we're about to run, get the set of PCAP files referenced and upload them to Malcolm
-                pcaps = {}
-                hasEvtxFiles = False
+                artifacts = {}
+                hasNonPcapArtifacts = False
                 if testSetPreExec.collected:
-                    pcaps = testSetPreExec.PCAPsReferenced()
-                    logging.debug(json.dumps({'tests': list(testSetPreExec.collected), 'pcaps': pcaps}))
-                    for pcapFile, pcapAttrs in pcaps.items():
-                        pcapFilespec = pcapFile if os.path.isabs(pcapFile) else os.path.join(args.pcapPath, pcapFile)
-                        pcapFileParts = os.path.splitext(pcapFilespec)
-                        if fileIsEvtx := (pcapFileParts[1].lower() == '.evtx'):
-                            hasEvtxFiles = True
-                        if pcapHash := shakey_file_hash(pcapFilespec):
-                            pcapNewName = pcapHash + pcapFileParts[1]
+                    artifacts = testSetPreExec.ArtifactsReferenced()
+                    logging.debug(json.dumps({'tests': list(testSetPreExec.collected), 'artifacts': artifacts}))
+                    for artifactFile, artifactAttrs in artifacts.items():
+                        artifactFilespec = (
+                            artifactFile
+                            if os.path.isabs(artifactFile)
+                            else os.path.join(args.artifactsPath, artifactFile)
+                        )
+                        artifactFileParts = os.path.splitext(artifactFilespec)
+                        if artifactHash := shakey_file_hash(artifactFilespec):
+                            fileMime = magic.from_file(artifactFilespec, mime=True)
+                            fileType = magic.from_file(artifactFilespec)
+                            fileIsPcap = (
+                                fileMime in ('application/vnd.tcpdump.pcap', 'application/x-pcapng')
+                            ) or re.search(r'pcap-?ng', fileType, re.IGNORECASE)
+                            hasNonPcapArtifacts = not fileIsPcap
+                            artifactNewName = artifactHash + artifactFileParts[1]
                             if ShuttingDown[0] == False:
                                 if args.noUpload or (
-                                    # TODO: is there a way we can detect duplicate EVTX files?
-                                    (fileIsEvtx == False)
-                                    and malcolmVm.ArkimeAlreadyHasFile(pcapNewName)
+                                    # TODO: is there a way we can detect duplicate non-PCAP (evtx, etc.) files?
+                                    (fileIsPcap == True)
+                                    and malcolmVm.ArkimeAlreadyHasFile(artifactNewName)
                                 ):
                                     # we've already uploaded this file, so we don't need to upload it again
-                                    set_pcap_hash(pcapFile, pcapHash)
+                                    set_artifact_hash(artifactFile, artifactHash)
                                 else:
                                     # copy the file to Malcolm for processing
                                     copyCode = malcolmVm.CopyFile(
-                                        pcapFilespec,
+                                        artifactFilespec,
                                         # TODO: Assuming the Malcolm directory like this might not be very robust
-                                        f"/home/{args.vmImageUsername}/Malcolm/pcap/upload/{'' if (pcapAttrs['netbox'] == True) else 'NBSITEID0,'}{pcapNewName}",
+                                        f"/home/{args.vmImageUsername}/Malcolm/pcap/upload/{'' if (artifactAttrs['netbox'] == True) else 'NBSITEID0,'}{artifactNewName}",
                                         tolerateFailure=True,
                                     )
                                     if copyCode == 0:
-                                        set_pcap_hash(pcapFile, pcapHash)
+                                        set_artifact_hash(artifactFile, artifactHash)
+                        else:
+                            logging.error(f'Failed to calculate hash for {artifactFilespec}')
 
                 # wait for all logs to finish being ingested into the system
-                if pcaps and args.waitForIdle:
+                if artifacts and args.waitForIdle:
                     if not malcolmVm.WaitForLastEventTime():
                         logging.warning(f"Malcolm instance never achieved idle state after inserting network logs")
-                    elif hasEvtxFiles and (not malcolmVm.WaitForLastEventTime(doctype='host')):
+                    elif hasNonPcapArtifacts and (not malcolmVm.WaitForLastEventTime(doctype='host')):
                         logging.warning(f"Malcolm instance never achieved idle state after inserting EVTX logs")
 
                 # run the tests

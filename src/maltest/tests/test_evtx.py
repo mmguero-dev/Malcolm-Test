@@ -16,14 +16,14 @@ UPLOAD_ARTIFACTS = [
 ]
 
 
+@pytest.mark.hostlogs
 @pytest.mark.mapi
-@pytest.mark.pcap
 def test_all_evtx(
     malcolm_http_auth,
     malcolm_url,
-    pcap_hash_map,  # actually pcap_hash_map holds evtx files too...
+    artifact_hash_map,  # actually artifact_hash_map holds evtx files too...
 ):
-    assert all([pcap_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
+    assert all([artifact_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
 
     response = requests.post(
         f"{malcolm_url}/mapi/agg/event.dataset",
@@ -34,7 +34,7 @@ def test_all_evtx(
             "filter": {
                 "event.module": "winlog",
                 "!event.dataset": None,
-                "tags": [pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
             },
         },
         allow_redirects=True,

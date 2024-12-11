@@ -48,7 +48,7 @@ def test_arkime_views(
 def test_arkime_sessions(
     malcolm_url,
     malcolm_http_auth,
-    pcap_hash_map,
+    artifact_hash_map,
 ):
     for viewName in EXPECTED_VIEWS:
         response = requests.post(
@@ -58,7 +58,7 @@ def test_arkime_sessions(
                 "date": "-1",
                 "order": "firstPacket:desc",
                 "view": viewName,
-                "expression": f"tags == [{','.join([pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
+                "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
             },
             allow_redirects=True,
             auth=malcolm_http_auth,
@@ -75,14 +75,14 @@ def test_arkime_sessions(
 def test_arkime_connections(
     malcolm_url,
     malcolm_http_auth,
-    pcap_hash_map,
+    artifact_hash_map,
 ):
     response = requests.post(
         f"{malcolm_url}/arkime/api/connections",
         headers={"Content-Type": "application/json"},
         json={
             "date": "-1",
-            "expression": f"tags == [{','.join([pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
+            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
         },
         allow_redirects=True,
         auth=malcolm_http_auth,
@@ -100,7 +100,7 @@ def test_arkime_connections(
 def test_arkime_pcap_payload(
     malcolm_url,
     malcolm_http_auth,
-    pcap_hash_map,
+    artifact_hash_map,
 ):
     response = requests.post(
         f"{malcolm_url}/arkime/api/sessions",
@@ -110,7 +110,7 @@ def test_arkime_pcap_payload(
             "order": "firstPacket:desc",
             "view": ARKIME_VIEW,
             "length": "10",
-            "expression": f"tags == [{','.join([pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}] && protocols == http && databytes >= 50000",
+            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}] && protocols == http && databytes >= 50000",
         },
         allow_redirects=True,
         auth=malcolm_http_auth,
@@ -138,7 +138,7 @@ def test_arkime_pcap_payload(
 def test_arkime_spiview(
     malcolm_url,
     malcolm_http_auth,
-    pcap_hash_map,
+    artifact_hash_map,
 ):
     response = requests.post(
         f"{malcolm_url}/arkime/api/spiview",
@@ -148,7 +148,7 @@ def test_arkime_spiview(
             "stopTime": "1614643200",
             "order": "firstPacket:desc",
             "spi": "source.ip,destination.ip,event.provider,event.dataset",
-            "expression": f"tags == [{','.join([pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
+            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
         },
         allow_redirects=True,
         auth=malcolm_http_auth,
@@ -165,7 +165,7 @@ def test_arkime_spiview(
 def test_arkime_spigraph(
     malcolm_url,
     malcolm_http_auth,
-    pcap_hash_map,
+    artifact_hash_map,
 ):
     response = requests.post(
         f"{malcolm_url}/arkime/api/spigraph",
@@ -175,7 +175,7 @@ def test_arkime_spigraph(
             "stopTime": "1614643200",
             "order": "firstPacket:desc",
             "field": "network.protocol",
-            "expression": f"tags == [{','.join([pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
+            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
         },
         allow_redirects=True,
         auth=malcolm_http_auth,
@@ -265,7 +265,7 @@ def test_arkime_fieldactions(
 def test_arkime_unique(
     malcolm_url,
     malcolm_http_auth,
-    pcap_hash_map,
+    artifact_hash_map,
 ):
     response = requests.post(
         f"{malcolm_url}/arkime/api/unique",
@@ -273,7 +273,7 @@ def test_arkime_unique(
         json={
             "date": "-1",
             "order": "firstPacket:desc",
-            "expression": f"tags == [{','.join([pcap_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
+            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
             "field": "event.provider",
         },
         allow_redirects=True,

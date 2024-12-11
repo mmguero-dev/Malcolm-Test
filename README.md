@@ -98,8 +98,8 @@ Malcolm runtime configuration:
 
 Testing configuration:
   --test-path <string>  Path containing test definitions (e.g., /home/user/.local/lib/python3.12/site-packages/maltest/tests)
-  -p <string>, --pcap-path <string>
-                        Path containing PCAP files used by tests (UPLOAD_ARTIFACTS in tests should resolve relative to this path)
+  -p <string>, --artifacts-path <string>
+                        Path containing artifacts used by tests (UPLOAD_ARTIFACTS in tests should resolve relative to this path)
   -t [true|false], --run-tests [true|false]
                         Run test suite once Malcolm is started
   -w [true|false], --wait-for-idle [true|false]
@@ -115,7 +115,7 @@ Here are some examples of use cases for `malcolm-test`. The output here is shown
 To provision the Malcolm VM from scratch, run the tests, then discard the VM:
 
 ```bash
-$ malcolm-test --rm --pcap-path /path/to/Malcolm-Test-PCAP
+$ malcolm-test --rm --artifacts-path /path/to/Malcolm-Test-Artifacts
 ====================== test session starts ======================
 platform linux -- Python 3.13.0, pytest-8.3.3, pluggy-1.5.0
 rootdir: <...>
@@ -132,7 +132,7 @@ collected 4 items
 Explanation of arguments:
 
 * `--rm`: discard the VM after running the tests
-* `--pcap-path /path/to/Malcolm-Test-PCAP`: specify the path to the upload artifacts used by the tests
+* `--artifacts-path /path/to/Malcolm-Test-Artifacts`: specify the path to the upload artifacts used by the tests
 
 #### <a name="BuildAndReuse"></a> Provisioning a Malcolm VM For Reuse With Subsequent Test Runs
 
@@ -155,7 +155,7 @@ $ malcolm-test \
     --rm \
     --image malcolm-testing \
     --vm-provision-os false \
-    --pcap-path /path/to/Malcolm-Test-PCAP
+    --artifacts-path /path/to/Malcolm-Test-Artifacts
 ====================== test session starts ======================
 platform linux -- Python 3.13.0, pytest-8.3.3, pluggy-1.5.0
 rootdir: <...>
@@ -174,7 +174,7 @@ Explanation of arguments:
 * `--rm`: discard the VM after running the tests
 * `--image malcolm-testing`: use the `malcolm-testing` image already built instead of building one from scratch
 * `--vm-provision-os false`: since the image is already provisioned, skip VM provisioning steps
-* `--pcap-path /path/to/Malcolm-Test-PCAP`: specify the path to the upload artifacts used by the tests
+* `--artifacts-path /path/to/Malcolm-Test-Artifacts`: specify the path to the upload artifacts used by the tests
 
 #### <a name="LongRunning"></a> Starting a Malcolm VM and Leaving It Running For Subsequent Test Runs
 
@@ -214,7 +214,7 @@ $ malcolm-test \
   --vm-provision-os false \
   --vm-provision-malcolm false \
   --run-tests \
-  --pcap-path /path/to/Malcolm-Test-PCAP
+  --artifacts-path /path/to/Malcolm-Test-Artifacts
 ====================== test session starts ======================
 platform linux -- Python 3.13.0, pytest-8.3.3, pluggy-1.5.0
 rootdir: <...>
@@ -235,7 +235,7 @@ collected 4 items
 * `--vm-provision-os false`: since the image is already provisioned, skip VM provisioning steps
 * `--vm-provision-malcolm false`: since the Malcolm instance is already configured, skip Malcolm provisioning steps
 * `--run-tests`: run the test suite
-* `--pcap-path /path/to/Malcolm-Test-PCAP`: specify the path to the upload artifacts used by the tests
+* `--artifacts-path /path/to/Malcolm-Test-Artifacts`: specify the path to the upload artifacts used by the tests
 
 Repeat the previous command as many times as needed as you adjust your tests. When finished, return to the first shell session and press CTRL+C to terminate and discard the Malcolm VM.
 
@@ -283,7 +283,7 @@ Package source highlights (under [`./src/maltest`](src/maltest)):
 
 New tests should be placed in the [`./src/maltest/tests/`](src/maltest/tests/) directory. Tests have access to the connection information for the running Malcolm instance through [fixtures](https://docs.pytest.org/en/stable/reference/fixtures.html#conftest-py-sharing-fixtures-across-multiple-files) provided by [`./src/maltest/tests/conftest.py`](src/maltest/tests/conftest.py).
 
-Use `UPLOAD_ARTIFACTS` to specify a PCAP file or files required by your test. This example test would succeed if both `foobar.pcap` and `barbaz.pcap` were uploaded to Malcolm and their hashes stored in the global `pcap_hash_map`:
+Use `UPLOAD_ARTIFACTS` to specify artifact files required by your test. This example test would succeed if both `foobar.pcap` and `barbaz.pcap` were uploaded to Malcolm and their hashes stored in the global `artifact_hash_map`:
 
 ```python
 import pytest
@@ -291,15 +291,15 @@ import pytest
 UPLOAD_ARTIFACTS = ['foobar.pcap', 'barbaz.pcap']
 
 @pytest.mark.pcap
-def test_malcolm_pcap_hash(
-    pcap_hash_map,
+def test_malcolm_artifact_hash(
+    artifact_hash_map,
 ):
-    assert all([pcap_hash_map.get(x, None) for x in UPLOAD_ARTIFACTS])
+    assert all([artifact_hash_map.get(x, None) for x in UPLOAD_ARTIFACTS])
 ```
 
-As PCAP files are uploaded to Malcolm by `malcolm-test`, they are [hashed](https://docs.python.org/3/library/hashlib.html#hashlib.shake_256) and stored in `pcap_hash_map` which maps the PCAP filename to its hash. The PCAP file is renamed to the hex-representation of the hash digest and the file extension (e.g., if the contents of `foobar.pcap` hashed to `52b92cdcec4af0e1`, the file would be uploaded as `52b92cdcec4af0e1.pcap`). This is done to ensure that conflicting PCAP filenames among different tests are resolved prior to processing. Since Malcolm automatically [assigns tags](https://idaholab.github.io/Malcolm/docs/upload.html#Tagging) to uploaded PCAP files, this hash should be used as a filter for the `tags` field for any network log-based queries for data related to that PCAP file. This way your tests can have reproducible outputs without being affected by PCAPs for other tests.
+As artifacts are uploaded to Malcolm by `malcolm-test`, they are [hashed](https://docs.python.org/3/library/hashlib.html#hashlib.shake_256) and stored in `artifact_hash_map` which maps the filename to its hash. The file is renamed to the hex-representation of the hash digest and the file extension (e.g., if the contents of `foobar.pcap` hashed to `52b92cdcec4af0e1`, the file would be uploaded as `52b92cdcec4af0e1.pcap`). This is done to ensure that conflicting filenames among different tests are resolved prior to processing. Since Malcolm automatically [assigns tags](https://idaholab.github.io/Malcolm/docs/upload.html#Tagging) to uploaded files, this hash should be used as a filter for the `tags` field for any network log-based queries for data related to that file. This way your tests can have reproducible outputs without being affected by artifacts for other tests.
 
-By default, `malcolm-test` instructs Malcolm to skip [NetBox enrichment](https://idaholab.github.io/Malcolm/docs/upload.html#UploadNetBoxSite) for PCAPs found in `UPLOAD_ARTIFACTS`. To make a test perform NetBox enrichment for its PCAP (using the Malcolm instance's default NetBox site), set `NETBOX_ENRICH` to `True` in the test source.
+By default, `malcolm-test` instructs Malcolm to skip [NetBox enrichment](https://idaholab.github.io/Malcolm/docs/upload.html#UploadNetBoxSite) for artifacts found in `UPLOAD_ARTIFACTS`. To make a test perform NetBox enrichment for its PCAP (using the Malcolm instance's default NetBox site), set `NETBOX_ENRICH` to `True` in the test source.
 
 See the following tests for examples of how to access and use fixtures:
 
@@ -313,8 +313,9 @@ When creating tests for `malcolm-test`, it's recommended to use [custom markers]
 
 * `@pytest.mark.arkime` - to indicate the test involves Arkime
 * `@pytest.mark.carving` - to indicate the test involves Zeek file extraction ("carving")
+* `@pytest.mark.hostlogs` - to indicate the test involves [third-party/host logs](https://idaholab.github.io/Malcolm/docs/third-party-logs.html#ThirdPartyLogs)
 * `@pytest.mark.dashboards` - to indicate the test involves OpenSearch Dashboards
-* `@pytest.mark.mapi` - to indicate the test uses the [Malcolm API](https://cisagov.github.io/Malcolm/docs/api.html#API)
+* `@pytest.mark.mapi` - to indicate the test uses the [Malcolm API](https://idaholab.github.io/Malcolm/docs/api.html#API)
 * `@pytest.mark.netbox` - to indicate the test relies on NetBox (see also `NETBOX_ENRICH` above)
 * `@pytest.mark.opensearch` - to indicate the test uses the OpenSearch/Elasticsearch API directly
 * `@pytest.mark.pcap` - to indicate the test relies on uploaded PCAP artifacts (see also `UPLOAD_ARTIFACTS` above)
@@ -332,7 +333,7 @@ $ malcolm-test \
   --vm-provision-os false \
   --vm-provision-malcolm false \
   --run-tests \
-  --pcap-path /path/to/Malcolm-Test-PCAP \
+  --artifacts-path /path/to/Malcolm-Test-Artifacts \
   -- -m netbox
 ===================================================================================== test session starts =====================================================================================
 platform linux -- Python 3.12.7, pytest-8.3.3, pluggy-1.5.0

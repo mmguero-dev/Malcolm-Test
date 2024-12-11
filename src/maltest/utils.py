@@ -40,7 +40,7 @@ warnings.filterwarnings(
     message="Unverified HTTPS request",
 )
 
-# tests should define UPLOAD_ARTIFACTS for files (e.g., PCAPs) they need uploaded to Malcolm
+# tests should define UPLOAD_ARTIFACTS for files (e.g., PCAP, evtx, etc.) they need uploaded to Malcolm
 UPLOAD_ARTIFACT_LIST_NAME = 'UPLOAD_ARTIFACTS'
 
 # tests should define NETBOX_ENRICH=True for PCAPs to be netbox-enriched (default false)
@@ -76,14 +76,14 @@ can be accessed by the pytest fixtures for connection info.
 MalcolmVmInfo = None
 
 """
-PcapHashMap contains a map of PCAP files' full path to their
+ArtifactHashMap contains a map of artifact files' full path to their
 file hash as calculated by shakey_file_hash. The presence
-of a PCAP file in this dict means that the PCAP file has
+of a file in this dict means that the file has
 been successfully uploaded to the Malcolm instance for processing,
 meaning (assuming auto-tagging based on filename is turned on)
 the hash can be used as a query filter for tags.
 """
-PcapHashMap = defaultdict(lambda: None)
+ArtifactHashMap = defaultdict(lambda: None)
 
 
 def shakey_file_hash(filename, digest_len=8):
@@ -157,35 +157,35 @@ def get_malcolm_vm_info():
     return MalcolmVmInfo
 
 
-def set_pcap_hash(pcapFileSpec, pcapFileHash=None):
+def set_artifact_hash(artifactFileSpec, artifactFileHash=None):
     """
-    set_pcap_hash: Given a filespec for a PCAP file, store its hash in the global PcapHashMap
+    set_artifact_hash: Given a filespec for an artifact file, store its hash in the global ArtifactHashMap
 
     Args:
-        pcapFileSpec - a filename for a PCAP file
-        pcapFileHash - the hash for the PCAP file; if not yet calculated, it will be
+        artifactFileSpec - a filename for an artifact file
+        artifactFileHash - the hash for the artifact file; if not yet calculated, it will be
 
     Returns:
-        the hash for the PCAP file as stored in PcapHashMap
+        the hash for the artifact file as stored in ArtifactHashMap
     """
-    global PcapHashMap
-    if tmpHash := pcapFileHash if pcapFileHash else shakey_file_hash(pcapFileSpec):
-        PcapHashMap[pcapFileSpec] = tmpHash
-    return PcapHashMap[pcapFileSpec]
+    global ArtifactHashMap
+    if tmpHash := artifactFileHash if artifactFileHash else shakey_file_hash(artifactFileSpec):
+        ArtifactHashMap[artifactFileSpec] = tmpHash
+    return ArtifactHashMap[artifactFileSpec]
 
 
-def get_pcap_hash_map():
+def get_artifact_hash_map():
     """
-    get_pcap_hash_map: Return the global PcapHashMap object
+    get_artifact_hash_map: Return the global ArtifactHashMap object
 
     Args:
         None
 
     Returns:
-        the global PcapHashMap object
+        the global ArtifactHashMap object
     """
-    global PcapHashMap
-    return PcapHashMap
+    global ArtifactHashMap
+    return ArtifactHashMap
 
 
 def get_malcolm_http_auth(info=None):
@@ -346,7 +346,7 @@ class MalcolmTestCollection(object):
         testSetPreExec = MalcolmTestCollection()
         pytest.main(['--collect-only', '-p', 'no:terminal'], plugins=[testSetPreExec])
         if testSetPreExec.collected:
-            for pcapFile, pcapAttrs in testSetPreExec.PCAPsReferenced().items():
+            for artifactFile, artifactAttrs in testSetPreExec.ArtifactsReferenced().items():
                 ...
 
     This allows for determining artifacts used by tests prior to running the tests themselves.
@@ -383,21 +383,21 @@ class MalcolmTestCollection(object):
         for item in items:
             self.collected.add(str(item.reportinfo()[0]))
 
-    def PCAPsReferenced(self):
+    def ArtifactsReferenced(self):
         """
-        PCAPsReferenced: Process collected pytest test files by parsing them and looking for UPLOAD_ARTIFACTS,
+        ArtifactsReferenced: Process collected pytest test files by parsing them and looking for UPLOAD_ARTIFACTS,
         which are then collected into a set of all referenced artifacts to be uploaded.
         This can be used to upload these artifacts to Malcolm and make sure they finish processing prior to
         running the tests that depend on them. Other variables looked for include:
-            NETBOX_ENRICH - True to indicate that the PCAP should be NetBox-enriched, otherwise it will not be;
-                            sets "netbox" in PCAP sub-dict to True or False
+            NETBOX_ENRICH - True to indicate that the artifact should be NetBox-enriched, otherwise it will not be;
+                            sets "netbox" in file sub-dict to True or False
 
         Args:
             None
 
         Returns:
             A dict of all files defined in UPLOAD_ARTIFACTS for all tests to be run, where the
-            key is the PCAP name and the value is a dict containing other relevant information, e.g.:
+            key is the file name and the value is a dict containing other relevant information, e.g.:
             {
                 "foobar.pcap" : {
                     "netbox": True
@@ -527,7 +527,7 @@ class MalcolmVM(object):
                 'MALCOLM_REPO_URL',
                 'MALCOLM_REPO_BRANCH',
                 'MALCOLM_TEST_PATH',
-                'MALCOLM_TEST_PCAP_PATH',
+                'MALCOLM_TEST_ARTIFACTS_PATH',
                 'MALCOLM_AUTH_PASSWORD',
                 'MALCOLM_AUTH_USERNAME',
             )
@@ -786,7 +786,7 @@ class MalcolmVM(object):
         ArkimeAlreadyHasFile: Query Arkime's files index to see if it's already processed a file
 
         Args:
-            filename - the PCAP filename to query
+            filename - the artifact filename to query
 
         Returns:
             True if Arkime has already seen a file with this name, False otherwise
