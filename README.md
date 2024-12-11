@@ -35,6 +35,8 @@ This project makes use of:
 
 pytest will be installed as a dependency by `pip`, but you will need to install and configure virter prior to running `mmalcolm-test`. See [its GitHub page](https://github.com/LINBIT/virter) for instructions.
 
+Certain artifacts (e.g., PCAP files, Windows Event Log backup files, etc.) are required to run the test suite. These can be obtained by cloning [idaholab/Malcolm-Test-Artifacts](https://github.com/idaholab/Malcolm-Test-Artifacts) and passing the path of location of that working copy to `mmalcolm-test` with either the `-a/--artifacts-path` command-line argument or by setting the `MALCOLM_TEST_ARTIFACTS_PATH` environment variable. It is recommended to clone the Malcolm-Test-Artifacts repository with [`--depth 1`](https://git-scm.com/docs/git-clone#Documentation/git-clone.txt-code--depthcodeemltdepthgtem).
+
 ## <a name="Usage"></a> Usage
 
 When [installed](#Installation) via pip, this script may be executed as `malcolm-test` from the Linux command line. 
@@ -98,7 +100,7 @@ Malcolm runtime configuration:
 
 Testing configuration:
   --test-path <string>  Path containing test definitions (e.g., /home/user/.local/lib/python3.12/site-packages/maltest/tests)
-  -p <string>, --artifacts-path <string>
+  -a <string>, --artifacts-path <string>
                         Path containing artifacts used by tests (UPLOAD_ARTIFACTS in tests should resolve relative to this path)
   -t [true|false], --run-tests [true|false]
                         Run test suite once Malcolm is started
@@ -119,14 +121,19 @@ $ malcolm-test --rm --artifacts-path /path/to/Malcolm-Test-Artifacts
 ====================== test session starts ======================
 platform linux -- Python 3.13.0, pytest-8.3.3, pluggy-1.5.0
 rootdir: <...>
-collected 4 items                                                                                                                                                                             
+collected 39 items                                                                                                                                                                            
 
-<...>/site-packages/maltest/tests/test_malcolm_db_health.py .                                                                                   [ 25%]
-<...>/site-packages/maltest/tests/test_malcolm_exists.py .                                                                                      [ 50%]
-<...>/site-packages/maltest/tests/test_malcolm_pcap.py .                                                                                        [ 75%]
-<...>/site-packages/maltest/tests/test_malcolm_response.py .                                                                                    [100%]
+<...>/site-packages/maltest/tests/test_arkime_api.py ...........   [ 28%]
+<...>/site-packages/maltest/tests/test_common_protocols.py ...     [ 35%]
+<...>/site-packages/maltest/tests/test_connectivity.py ...         [ 43%]
+<...>/site-packages/maltest/tests/test_detection_packages.py ....  [ 53%]
+<...>/site-packages/maltest/tests/test_evtx.py .                   [ 56%]
+<...>/site-packages/maltest/tests/test_mapi.py ....                [ 66%]
+<...>/site-packages/maltest/tests/test_ot_protocols.py .           [ 69%]
+<...>/site-packages/maltest/tests/test_severity.py .               [ 71%]
+<...>/site-packages/maltest/tests/test_upstreams.py ...........    [100%]
 
-====================== 4 passed in 0.26s ======================
+====================== 39 passed in 4.26s ======================
 ```
 
 Explanation of arguments:
@@ -159,14 +166,19 @@ $ malcolm-test \
 ====================== test session starts ======================
 platform linux -- Python 3.13.0, pytest-8.3.3, pluggy-1.5.0
 rootdir: <...>
-collected 4 items                                                                                                                                                                             
+collected 39 items                                                                                                                                                                            
 
-<...>/site-packages/maltest/tests/test_malcolm_db_health.py .                                                                                   [ 25%]
-<...>/site-packages/maltest/tests/test_malcolm_exists.py .                                                                                      [ 50%]
-<...>/site-packages/maltest/tests/test_malcolm_pcap.py .                                                                                        [ 75%]
-<...>/site-packages/maltest/tests/test_malcolm_response.py .                                                                                    [100%]
+<...>/site-packages/maltest/tests/test_arkime_api.py ...........   [ 28%]
+<...>/site-packages/maltest/tests/test_common_protocols.py ...     [ 35%]
+<...>/site-packages/maltest/tests/test_connectivity.py ...         [ 43%]
+<...>/site-packages/maltest/tests/test_detection_packages.py ....  [ 53%]
+<...>/site-packages/maltest/tests/test_evtx.py .                   [ 56%]
+<...>/site-packages/maltest/tests/test_mapi.py ....                [ 66%]
+<...>/site-packages/maltest/tests/test_ot_protocols.py .           [ 69%]
+<...>/site-packages/maltest/tests/test_severity.py .               [ 71%]
+<...>/site-packages/maltest/tests/test_upstreams.py ...........    [100%]
 
-====================== 4 passed in 0.62s ======================
+====================== 39 passed in 4.26s ======================
 ```
 
 Explanation of arguments:
@@ -218,14 +230,19 @@ $ malcolm-test \
 ====================== test session starts ======================
 platform linux -- Python 3.13.0, pytest-8.3.3, pluggy-1.5.0
 rootdir: <...>
-collected 4 items                                                                                                                                                                             
+collected 39 items                                                                                                                                                                            
 
-<...>/site-packages/maltest/tests/test_malcolm_db_health.py .                                                                                   [ 25%]
-<...>/site-packages/maltest/tests/test_malcolm_exists.py .                                                                                      [ 50%]
-<...>/site-packages/maltest/tests/test_malcolm_pcap.py .                                                                                        [ 75%]
-<...>/site-packages/maltest/tests/test_malcolm_response.py .                                                                                    [100%]
+<...>/site-packages/maltest/tests/test_arkime_api.py ...........   [ 28%]
+<...>/site-packages/maltest/tests/test_common_protocols.py ...     [ 35%]
+<...>/site-packages/maltest/tests/test_connectivity.py ...         [ 43%]
+<...>/site-packages/maltest/tests/test_detection_packages.py ....  [ 53%]
+<...>/site-packages/maltest/tests/test_evtx.py .                   [ 56%]
+<...>/site-packages/maltest/tests/test_mapi.py ....                [ 66%]
+<...>/site-packages/maltest/tests/test_ot_protocols.py .           [ 69%]
+<...>/site-packages/maltest/tests/test_severity.py .               [ 71%]
+<...>/site-packages/maltest/tests/test_upstreams.py ...........    [100%]
 
-====================== 4 passed in 0.25s ======================
+====================== 39 passed in 4.26s ======================
 ```
 
 * `--rm false`: don't destroy the VM after running the tests (the other instance of `malcolm-test` will handle that)
@@ -334,14 +351,13 @@ $ malcolm-test \
   --vm-provision-malcolm false \
   --run-tests \
   --artifacts-path /path/to/Malcolm-Test-Artifacts \
-  -- -m netbox
-===================================================================================== test session starts =====================================================================================
+  -- -m ics
+====================== test session starts ======================
 platform linux -- Python 3.12.7, pytest-8.3.3, pluggy-1.5.0
 rootdir: /home/tlacuache
-collected 7 items / 6 deselected / 1 selected                                                                                                                                                 
+collected 39 items / 38 deselected / 1 selected                                                                      
+                                                                                                                      
+<...>/site-packages/maltest/tests/test_ot_protocols.py ...     [ 35%]
 
-<...>/site-packages/maltest/tests/test_cyberville.py .                                                                                [100%]
-
-=============================================================================== 1 passed, 6 deselected in 0.20s ===============================================================================
-
+====================== 1 passed, 38 deselected in 0.24s ======================
 ```
