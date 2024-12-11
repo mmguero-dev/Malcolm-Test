@@ -204,3 +204,34 @@ def test_extracted_files_download(
         assert fileName
         assert unzippedChunks
         assert bytesSize
+
+
+@pytest.mark.inprog
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_freq(
+    malcolm_http_auth,
+    malcolm_url,
+    artifact_hash_map,
+):
+    response = requests.post(
+        f"{malcolm_url}/mapi/agg/dns.host,event.freq_score_v1,event.freq_score_v2",
+        headers={"Content-Type": "application/json"},
+        json={
+            "from": "0",
+            "filter": {
+                "event.provider": "zeek",
+                "event.dataset": "dns",
+                "!event.freq_score_v1": None,
+                "!event.freq_score_v2": None,
+                "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+            },
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    buckets = {item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), ['dns.host', 'buckets'], [])}
+    LOGGER.debug(buckets)
+    assert buckets

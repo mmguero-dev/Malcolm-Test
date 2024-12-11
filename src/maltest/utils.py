@@ -253,6 +253,7 @@ class DatabaseObjs(object):
     Attributes:
         DatabaseClass    - the OpenSearch or Elasticsearch class
         SearchClass      - the Search class
+        AggregationClass - the Aggregation class
         DatabaseInitArgs - a dict of arguments to pass into the DatabaseClass
                            constructor (e.g., **obj.DatabaseInitArgs)
     """
@@ -269,6 +270,7 @@ class DatabaseObjs(object):
         """
         self.DatabaseClass = None
         self.SearchClass = None
+        self.AggregationClass = None
         self.DatabaseInitArgs = defaultdict(lambda: None)
         self.DatabaseInitArgs['request_timeout'] = 1
         self.DatabaseInitArgs['verify_certs'] = False
@@ -301,6 +303,7 @@ class OpenSearchObjs(DatabaseObjs):
         if self.OpenSearchImport:
             self.DatabaseClass = self.OpenSearchImport.OpenSearch
             self.SearchClass = self.OpenSearchImport.Search
+            self.AggregationClass = self.OpenSearchImport.A
         if username:
             self.DatabaseInitArgs['http_auth'] = (username, password)
 
@@ -333,6 +336,7 @@ class ElasticsearchObjs(DatabaseObjs):
             self.DatabaseClass = self.elasticImport.Elasticsearch
         if self.ElasticDslImport:
             self.SearchClass = self.elasticDslImport.Search
+            self.AggregationClass = self.elasticDslImport.A
         if username:
             self.DatabaseInitArgs['basic_auth'] = (username, password)
 
