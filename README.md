@@ -354,7 +354,7 @@ $ malcolm-test \
   -- -m ics
 ====================== test session starts ======================
 platform linux -- Python 3.12.7, pytest-8.3.3, pluggy-1.5.0
-rootdir: /home/tlacuache
+rootdir: <...>
 collected 39 items / 38 deselected / 1 selected                                                                      
                                                                                                                       
 <...>/site-packages/maltest/tests/test_ot_protocols.py ...     [ 35%]
