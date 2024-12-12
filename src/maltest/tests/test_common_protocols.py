@@ -270,5 +270,5 @@ def test_geo(
             )
             response.raise_for_status()
             cities = [x['key'] for x in response.json()['event.provider']['buckets'][0][field]['buckets']]
-            LOGGER.debug(json.dumps(cities))
+            LOGGER.debug({provider: {field: cities}})
             assert cities
