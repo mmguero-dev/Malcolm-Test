@@ -1,6 +1,7 @@
 import logging
 import mmguero
 import pytest
+import json
 import random
 import re
 import requests
@@ -206,7 +207,6 @@ def test_extracted_files_download(
         assert bytesSize
 
 
-@pytest.mark.inprog
 @pytest.mark.mapi
 @pytest.mark.pcap
 def test_freq(
@@ -219,6 +219,7 @@ def test_freq(
         headers={"Content-Type": "application/json"},
         json={
             "from": "0",
+            "limit": "10",
             "filter": {
                 "event.provider": "zeek",
                 "event.dataset": "dns",
@@ -232,6 +233,12 @@ def test_freq(
         verify=False,
     )
     response.raise_for_status()
-    buckets = {item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), ['dns.host', 'buckets'], [])}
-    LOGGER.debug(buckets)
-    assert buckets
+    freqs = {
+        bucket['key']: (
+            bucket['event.freq_score_v1']['buckets'][0]['key'],
+            bucket['event.freq_score_v1']['buckets'][0]['event.freq_score_v2']['buckets'][0]['key'],
+        )
+        for bucket in response.json().get('dns.host').get('buckets')
+    }
+    LOGGER.debug(json.dumps(freqs))
+    assert freqs
