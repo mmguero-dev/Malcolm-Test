@@ -242,3 +242,33 @@ def test_freq(
     }
     LOGGER.debug(json.dumps(freqs))
     assert freqs
+
+
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_geo(
+    malcolm_http_auth,
+    malcolm_url,
+    artifact_hash_map,
+):
+    for provider in ('zeek', 'suricata'):
+        for field in ('destination.geo.city_name', 'source.geo.city_name'):
+            response = requests.post(
+                f"{malcolm_url}/mapi/agg/event.provider,{field}",
+                headers={"Content-Type": "application/json"},
+                json={
+                    "from": "0",
+                    "filter": {
+                        "event.provider": provider,
+                        f"!{field}": None,
+                        "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                    },
+                },
+                allow_redirects=True,
+                auth=malcolm_http_auth,
+                verify=False,
+            )
+            response.raise_for_status()
+            cities = [x['key'] for x in response.json()['event.provider']['buckets'][0][field]['buckets']]
+            LOGGER.debug(json.dumps(cities))
+            assert cities
