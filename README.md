@@ -4,6 +4,7 @@
 
 * [Installation](#Installation)
 * [Usage](#Usage)
+    - [Environment Variables](#UsageEnvironmentVars)
     - [Examples](#UsageExamples)
         + [Provisioning a Malcolm VM and Running the Tests From Scratch](#FromScratch)
         + [Provisioning a Malcolm VM For Reuse With Subsequent Test Runs](#BuildAndReuse)
@@ -106,6 +107,20 @@ Testing configuration:
                         Run test suite once Malcolm is started
   -w [true|false], --wait-for-idle [true|false]
                         Wait for ingest idle state before running tests
+```
+
+### <a name="UsageEnvironmentVars"></a> Environment Variables
+
+When `--vm-provision-malcolm` is `true`, arguments to configure Malcolm can be provided via environment variables. These environment variables can be found in [01-clone-install.toml](src/maltest/virter/malcolm-init/01-clone-install.toml), though they must be prefixed with `MALCOLM_` to indicate their purpose. For example, setting the `MALCOLM_RUNTIME` environment variable to `podman` would cause Malcolm to be run with Podman instead of the default Docker backend. [02-auth_setup.toml](src/maltest/virter/malcolm-init/02-auth_setup.toml) similarly contains the environment variables for changing the virtual Malcolm instance's username and password from the default.
+
+For settings which are not available as arguments to Malcolm's `install.py`/`configure` script, the special `MALCOLM_EXTRA` variable can be used to set values directly into the environment variable files. The format of this variable is:
+
+`MALCOLM_EXTRA="filename.env:VARIABLE_NAME=VARIABLE_VALUE"`
+
+More than one variable can be specified using a pipe character (`|`) as a delimiter. For example:
+
+```bash 
+MALCOLM_EXTRA="filebeat.env:FILEBEAT_PREPARE_PROCESS_COUNT=4|zeek-offline.env:ZEEK_AUTO_ANALYZE_PCAP_THREADS=4|suricata-offline.env:SURICATA_AUTO_ANALYZE_PCAP_THREADS=4" malcolm-test ...
 ```
 
 ### <a name="UsageExamples"></a> Examples
