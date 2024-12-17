@@ -34,9 +34,9 @@ This project makes use of:
 * [virter](https://github.com/LINBIT/virter) for the creation and execution of libvirt-based virtual machines running Malcolm
 * [pytest](https://docs.pytest.org/en/stable/) for the testing framework
 
-pytest will be installed as a dependency by `pip`, but you will need to install and configure virter prior to running `mmalcolm-test`. See [its GitHub page](https://github.com/LINBIT/virter) for instructions.
+pytest will be installed as a dependency by `pip`, but you will need to install and configure virter prior to running `malcolm-test`. See [its GitHub page](https://github.com/LINBIT/virter) for instructions.
 
-Certain artifacts (e.g., PCAP files, Windows Event Log backup files, etc.) are required to run the test suite. These can be obtained by cloning [idaholab/Malcolm-Test-Artifacts](https://github.com/idaholab/Malcolm-Test-Artifacts) and passing the path of location of that working copy to `mmalcolm-test` with either the `-a/--artifacts-path` command-line argument or by setting the `MALCOLM_TEST_ARTIFACTS_PATH` environment variable. It is recommended to clone the Malcolm-Test-Artifacts repository with [`--depth 1`](https://git-scm.com/docs/git-clone#Documentation/git-clone.txt-code--depthcodeemltdepthgtem).
+Certain artifacts (e.g., PCAP files, Windows Event Log backup files, etc.) are required to run the test suite. These can be obtained by cloning [idaholab/Malcolm-Test-Artifacts](https://github.com/idaholab/Malcolm-Test-Artifacts) and passing the path of location of that working copy to `malcolm-test` with either the `-a/--artifacts-path` command-line argument or by setting the `MALCOLM_TEST_ARTIFACTS_PATH` environment variable. It is recommended to clone the Malcolm-Test-Artifacts repository with [`--depth 1`](https://git-scm.com/docs/git-clone#Documentation/git-clone.txt-code--depthcodeemltdepthgtem).
 
 ## <a name="Usage"></a> Usage
 
