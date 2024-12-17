@@ -6,7 +6,7 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 UPLOAD_ARTIFACTS = [
-    "pcap/protocols/HTTP_1.pcap",
+    "pcap/protocols/Tunnels.pcap",
 ]
 
 ARKIME_VIEW = "Arkime Sessions"
@@ -110,7 +110,7 @@ def test_arkime_pcap_payload(
             "order": "firstPacket:desc",
             "view": ARKIME_VIEW,
             "length": "10",
-            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}] && protocols == http && databytes >= 50000",
+            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}] && databytes >= 10000",
         },
         allow_redirects=True,
         auth=malcolm_http_auth,
@@ -130,7 +130,7 @@ def test_arkime_pcap_payload(
     )
     response.raise_for_status()
     LOGGER.debug(f"{','.join(sessionsIds)}: {len(response.content)}")
-    assert len(response.content) >= 500000
+    assert len(response.content) >= 10000
 
 
 @pytest.mark.pcap

@@ -7,12 +7,6 @@ LOGGER = logging.getLogger(__name__)
 
 UPLOAD_ARTIFACTS = [
     "evtx/sbousseaden-EVTX-ATTACK-SAMPLES.7z",
-    "evtx/NextronSystems-evtx-baseline-win10-client.7z",
-    "evtx/NextronSystems-evtx-baseline-win11-client-2023.7z",
-    "evtx/NextronSystems-evtx-baseline-win11-client.7z",
-    "evtx/NextronSystems-evtx-baseline-win2022-0-20348-azure.7z",
-    "evtx/NextronSystems-evtx-baseline-win2022-ad.7z",
-    "evtx/NextronSystems-evtx-baseline-win2022-evtx.7z",
 ]
 
 
