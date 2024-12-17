@@ -246,13 +246,13 @@ def test_freq(
 
 @pytest.mark.mapi
 @pytest.mark.pcap
-def test_geo(
+def test_geo_asn(
     malcolm_http_auth,
     malcolm_url,
     artifact_hash_map,
 ):
     for provider in ('zeek', 'suricata'):
-        for field in ('destination.geo.city_name', 'source.geo.city_name'):
+        for field in ('destination.geo.city_name', 'source.geo.city_name', 'destination.as.full', 'source.as.full'):
             response = requests.post(
                 f"{malcolm_url}/mapi/agg/event.provider,{field}",
                 headers={"Content-Type": "application/json"},
@@ -269,6 +269,44 @@ def test_geo(
                 verify=False,
             )
             response.raise_for_status()
-            cities = [x['key'] for x in response.json()['event.provider']['buckets'][0][field]['buckets']]
-            LOGGER.debug({provider: {field: cities}})
-            assert cities
+            items = [x['key'] for x in response.json()['event.provider']['buckets'][0][field]['buckets']]
+            LOGGER.debug({provider: {field: items}})
+            assert items
+
+
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_conn_info(
+    malcolm_http_auth,
+    malcolm_url,
+    artifact_hash_map,
+):
+    for provider in ['zeek']:
+        for field in (
+            'source.oui',
+            'destination.oui',
+            'related.oui',
+            'network.direction',
+            'network.transport',
+            'network.iana_number',
+            'user_agent.original',
+        ):
+            response = requests.post(
+                f"{malcolm_url}/mapi/agg/event.provider,{field}",
+                headers={"Content-Type": "application/json"},
+                json={
+                    "from": "0",
+                    "filter": {
+                        "event.provider": provider,
+                        f"!{field}": None,
+                        "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                    },
+                },
+                allow_redirects=True,
+                auth=malcolm_http_auth,
+                verify=False,
+            )
+            response.raise_for_status()
+            item = [x['key'] for x in response.json()['event.provider']['buckets'][0][field]['buckets']]
+            LOGGER.debug({provider: {field: item}})
+            assert item
