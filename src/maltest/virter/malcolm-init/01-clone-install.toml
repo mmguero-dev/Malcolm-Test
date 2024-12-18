@@ -123,6 +123,7 @@ EXTRA_ARRAY=()
 if [[ -n "$EXTRA" ]]; then
   readarray -td '' EXTRA_ARRAY < <(awk '{ gsub(/\|/,"\0"); print; }' <<<"$EXTRA|"); unset 'EXTRA_ARRAY[-1]';
 fi
+EXTRA_ARRAY+=( "nginx.env:NGINX_LOG_ACCESS_AND_ERRORS=true" )
 
 pushd Malcolm
 python3 ./scripts/install.py --defaults \

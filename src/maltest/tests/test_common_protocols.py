@@ -1,7 +1,6 @@
 import logging
 import mmguero
 import pytest
-import json
 import random
 import re
 import requests
@@ -240,7 +239,7 @@ def test_freq(
         )
         for bucket in response.json().get('dns.host').get('buckets')
     }
-    LOGGER.debug(json.dumps(freqs))
+    LOGGER.debug(freqs)
     assert freqs
 
 

@@ -1,7 +1,6 @@
 import pytest
 import mmguero
 import requests
-import json
 import logging
 
 LOGGER = logging.getLogger(__name__)
@@ -58,7 +57,7 @@ def test_netbox_cross_segment(
                 destinationSegmentName = destinationSegmentBucket["key"]
                 crossSegmentCount = destinationSegmentBucket["doc_count"]
                 results[providerName].append(f"{sourceSegmentName} -> {destinationSegmentName} = {crossSegmentCount}")
-    LOGGER.debug(json.dumps(results))
+    LOGGER.debug(results)
     assert results.get("zeek", None)
     assert results.get("suricata", None)
 

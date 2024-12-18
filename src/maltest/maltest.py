@@ -464,8 +464,10 @@ def main():
                 if artifacts and args.waitForIdle:
                     if not malcolmVm.WaitForLastEventTime():
                         logging.warning(f"Malcolm instance never achieved idle state after inserting network logs")
-                    elif hasNonPcapArtifacts and (not malcolmVm.WaitForLastEventTime(doctype='host')):
-                        logging.warning(f"Malcolm instance never achieved idle state after inserting EVTX logs")
+                    # TODO: Malcolm should exclude NGINX access logs from this API, so until then just assume
+                    #   it happened along with the PCAP wait.
+                    # elif hasNonPcapArtifacts and (not malcolmVm.WaitForLastEventTime(doctype='host')):
+                    #     logging.warning(f"Malcolm instance never achieved idle state after inserting EVTX logs")
 
                 # run the tests
                 if ShuttingDown[0] == False:

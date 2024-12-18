@@ -20,6 +20,14 @@ UPLOAD_ARTIFACTS = [
     "pcap/protocols/S7comm.pcap",
     "pcap/protocols/Synchrophasor.pcap",
     "pcap/protocols/TDS.pcap",
+    "pcap/other/Digital Bond S4/Advantech.pcap",
+    "pcap/other/Digital Bond S4/BACnet_FIU.pcap",
+    "pcap/other/Digital Bond S4/BACnet_Host.pcap",
+    "pcap/other/Digital Bond S4/MicroLogix56.pcap",
+    "pcap/other/Digital Bond S4/Modicon.pcap",
+    "pcap/other/Digital Bond S4/WinXP.pcap",
+    "pcap/other/Digital Bond S4/iFix_Client86.pcap",
+    "pcap/other/Digital Bond S4/iFix_Server119.pcap",
 ]
 
 # TODO:
@@ -115,6 +123,7 @@ EXPECTED_DATASETS = [
 ]
 
 
+@pytest.mark.ics
 @pytest.mark.mapi
 @pytest.mark.pcap
 def test_ot_protocols(
@@ -144,3 +153,35 @@ def test_ot_protocols(
     }
     LOGGER.debug(buckets)
     assert all([(buckets.get(x, 0) > 0) for x in EXPECTED_DATASETS])
+
+
+@pytest.mark.ics
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_ics_best_guess(
+    malcolm_http_auth,
+    malcolm_url,
+    artifact_hash_map,
+):
+    for field in [
+        "zeek.bestguess.category",
+        "zeek.bestguess.name",
+    ]:
+        response = requests.post(
+            f"{malcolm_url}/mapi/agg/{field}",
+            headers={"Content-Type": "application/json"},
+            json={
+                "from": "0",
+                "filter": {
+                    f"!{field}": None,
+                    "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                },
+            },
+            allow_redirects=True,
+            auth=malcolm_http_auth,
+            verify=False,
+        )
+        response.raise_for_status()
+        buckets = {item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), [field, 'buckets'], [])}
+        LOGGER.debug(buckets)
+        assert buckets
