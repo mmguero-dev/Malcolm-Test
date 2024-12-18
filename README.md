@@ -341,16 +341,19 @@ See the following tests for examples of how to access and use fixtures:
 * [test_common_protocols.py](src/maltest/tests/test_common_protocols.py)
     - querying the [Malcolm Field Aggregation API](https://idaholab.github.io/Malcolm/docs/api-aggregations.html), specifying a `from` query start time filter to search all historical data, a filter on `event.provider` to limit the result set to records from Zeek, and a `tags` filter to limit the matching records to the tags represented by the uploaded PCAPs (see above)
 
-When creating tests for `malcolm-test`, it's recommended to use [custom markers](https://docs.pytest.org/en/stable/example/markers.html#working-with-custom-markers) to group like tests into categories. More than one marker can be used to decorate a test. Some example markers include (but are not limited to; be judicious wise in choosing custom markers):
+When creating tests for `malcolm-test`, it's recommended to use [custom markers](https://docs.pytest.org/en/stable/example/markers.html#working-with-custom-markers) to group like tests into categories. More than one marker can be used to decorate a test. Some example markers include (but are not limited to; be judicious in choosing custom markers):
 
 * `@pytest.mark.arkime` - to indicate the test involves Arkime
+* `@pytest.mark.beats` - to indicate the test involves data other than network log data (e.g., host logs, etc.)
 * `@pytest.mark.carving` - to indicate the test involves Zeek file extraction ("carving")
-* `@pytest.mark.hostlogs` - to indicate the test involves [third-party/host logs](https://idaholab.github.io/Malcolm/docs/third-party-logs.html#ThirdPartyLogs)
 * `@pytest.mark.dashboards` - to indicate the test involves OpenSearch Dashboards
+* `@pytest.mark.hostlogs` - to indicate the test involves [third-party/host logs](https://idaholab.github.io/Malcolm/docs/third-party-logs.html#ThirdPartyLogs)
+* `@pytest.mark.ics` - to indicate the test involves data or features related to OT/ICS network log data
 * `@pytest.mark.mapi` - to indicate the test uses the [Malcolm API](https://idaholab.github.io/Malcolm/docs/api.html#API)
 * `@pytest.mark.netbox` - to indicate the test relies on NetBox (see also `NETBOX_ENRICH` above)
 * `@pytest.mark.opensearch` - to indicate the test uses the OpenSearch/Elasticsearch API directly
 * `@pytest.mark.pcap` - to indicate the test relies on uploaded PCAP artifacts (see also `UPLOAD_ARTIFACTS` above)
+* `@pytest.mark.vm` - to indicate the test deals with the Malcolm virtual machine itself
 * `@pytest.mark.webui` - to indicate the test checks some web user interface component of Malcolm
 * etc.
 

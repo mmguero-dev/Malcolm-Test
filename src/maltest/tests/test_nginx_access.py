@@ -8,7 +8,6 @@ LOGGER = logging.getLogger(__name__)
 
 @pytest.mark.mapi
 @pytest.mark.beats
-@pytest.mark.nginx
 def test_nginx_logs(
     malcolm_http_auth,
     malcolm_url,
