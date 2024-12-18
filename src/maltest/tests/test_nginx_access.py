@@ -30,8 +30,6 @@ def test_nginx_logs(
                 "doctype": "host",
                 "filter": {
                     "event.module": "nginx",
-                    "agent.type": "nginx",
-                    "service.type": "nginx",
                 },
             },
             allow_redirects=True,
