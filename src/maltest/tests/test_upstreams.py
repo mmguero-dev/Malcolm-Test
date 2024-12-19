@@ -16,14 +16,14 @@ def test_local_account_management_page_exists(
     malcolm_url,
     malcolm_http_auth,
 ):
-"""test_local_account_management_page_exists
+    """test_local_account_management_page_exists
 
-Test that the local account management authentication page is served up
+    Test that the local account management authentication page is served up
 
-Args:
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-"""
+    Args:
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    """
     response = requests.get(
         f"{malcolm_url}/auth/",
         allow_redirects=True,
@@ -41,14 +41,14 @@ def test_upload_page_exists(
     malcolm_url,
     malcolm_http_auth,
 ):
-"""test_upload_page_exists
+    """test_upload_page_exists
 
-Test that the PCAP upload page is served up
+    Test that the PCAP upload page is served up
 
-Args:
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-"""
+    Args:
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    """
     response = requests.get(
         f"{malcolm_url}/upload/",
         allow_redirects=True,
@@ -66,14 +66,14 @@ def test_landing_page_exists(
     malcolm_url,
     malcolm_http_auth,
 ):
-"""test_landing_page_exists
+    """test_landing_page_exists
 
-Test that the Malcolm landing page is served up
+    Test that the Malcolm landing page is served up
 
-Args:
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-"""
+    Args:
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    """
     response = requests.get(
         f"{malcolm_url}/",
         allow_redirects=True,
@@ -91,14 +91,14 @@ def test_documentation_exists(
     malcolm_url,
     malcolm_http_auth,
 ):
-"""test_documentation_exists
+    """test_documentation_exists
 
-Test that the Malcolm documentation page is served up
+    Test that the Malcolm documentation page is served up
 
-Args:
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-"""
+    Args:
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    """
     response = requests.get(
         f"{malcolm_url}/readme/",
         allow_redirects=True,
@@ -120,14 +120,14 @@ def test_dashboards_exists(
     malcolm_url,
     malcolm_http_auth,
 ):
-"""test_dashboards_exists
+    """test_dashboards_exists
 
-Test that the Malcolm OpenSearch Dashboards UI is served up
+    Test that the Malcolm OpenSearch Dashboards UI is served up
 
-Args:
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-"""
+    Args:
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    """
     response = requests.get(
         f"{malcolm_url}/dashboards/",
         headers={"osd-xsrf": "anything"},
@@ -147,14 +147,14 @@ def test_dashboards_maps_exists(
     malcolm_url,
     malcolm_http_auth,
 ):
-"""test_dashboards_maps_exists
+    """test_dashboards_maps_exists
 
-Test that the Malcolm OpenSearch Dashboards offline map geojson file is served up
+    Test that the Malcolm OpenSearch Dashboards offline map geojson file is served up
 
-Args:
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-"""
+    Args:
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    """
     response = requests.get(
         f"{malcolm_url}/world.geojson",
         headers={"Content-Type": "application/json"},
@@ -174,14 +174,14 @@ def test_netbox_exists(
     malcolm_url,
     malcolm_http_auth,
 ):
-"""test_netbox_exists
+    """test_netbox_exists
 
-Test that the NetBox UI is served up
+    Test that the NetBox UI is served up
 
-Args:
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-"""
+    Args:
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    """
     response = requests.get(
         f"{malcolm_url}/netbox/",
         allow_redirects=True,
@@ -200,14 +200,14 @@ def test_netbox_health_plugin(
     malcolm_url,
     malcolm_http_auth,
 ):
-"""test_netbox_health_plugin
+    """test_netbox_health_plugin
 
-Check the accessibility and result of the NetBox health check plugin
+    Check the accessibility and result of the NetBox health check plugin
 
-Args:
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-"""
+    Args:
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    """
     response = requests.get(
         f"{malcolm_url}/netbox/plugins/netbox_healthcheck_plugin/healthcheck/?format=json",
         headers={"Content-Type": "application/json"},
@@ -227,14 +227,14 @@ def test_arkime_exists(
     malcolm_url,
     malcolm_http_auth,
 ):
-"""test_arkime_exists
+    """test_arkime_exists
 
-Test that the Arkime UI is served up
+    Test that the Arkime UI is served up
 
-Args:
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-"""
+    Args:
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    """
     response = requests.get(
         f"{malcolm_url}/arkime/",
         allow_redirects=True,
@@ -252,14 +252,14 @@ def test_cyberchef_exists(
     malcolm_url,
     malcolm_http_auth,
 ):
-"""test_cyberchef_exists
+    """test_cyberchef_exists
 
-Test that the CyberChef UI is served up
+    Test that the CyberChef UI is served up
 
-Args:
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-"""
+    Args:
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    """
     response = requests.get(
         f"{malcolm_url}/arkime/cyberchef/",
         allow_redirects=True,
@@ -278,14 +278,14 @@ def test_extracted_files_exists(
     malcolm_url,
     malcolm_http_auth,
 ):
-"""test_extracted_files_exists
+    """test_extracted_files_exists
 
-Check the extracted files download UI is served up
+    Check the extracted files download UI is served up
 
-Args:
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-"""
+    Args:
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    """
     response = requests.get(
         f"{malcolm_url}/extracted-files/",
         allow_redirects=True,

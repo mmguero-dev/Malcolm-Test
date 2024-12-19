@@ -60,15 +60,15 @@ def test_severity_tags(
     malcolm_url,
     artifact_hash_map,
 ):
-"""test_severity_tags
+    """test_severity_tags
 
-Test that the expected event.severity_tags are generated correctly
+    Test that the expected event.severity_tags are generated correctly
 
-Args:
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
-"""
+    Args:
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+    """
     assert all([artifact_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
 
     response = requests.post(

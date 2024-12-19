@@ -27,15 +27,15 @@ def test_netbox_cross_segment(
     malcolm_url,
     artifact_hash_map,
 ):
-"""test_netbox_cross_segment
+    """test_netbox_cross_segment
 
-After netbox enrichment/autopopulation happens, check that cross-segment traffic was detected
+    After netbox enrichment/autopopulation happens, check that cross-segment traffic was detected
 
-Args:
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
-"""
+    Args:
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+    """
     response = requests.post(
         f"{malcolm_url}/mapi/agg/event.provider,source.segment.name,destination.segment.name",
         headers={"Content-Type": "application/json"},
@@ -79,15 +79,15 @@ def test_netbox_enrichment(
     malcolm_url,
     artifact_hash_map,
 ):
-"""test_netbox_enrichment
+    """test_netbox_enrichment
 
-Check for various fields populated by netbox enrichment (manufacturer, device type, device name, etc.)
+    Check for various fields populated by netbox enrichment (manufacturer, device type, device name, etc.)
 
-Args:
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
-"""
+    Args:
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+    """
     for field in [
         "related.manufacturer",
         "related.device_type",

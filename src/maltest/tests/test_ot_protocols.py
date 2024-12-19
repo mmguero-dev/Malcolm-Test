@@ -134,15 +134,15 @@ def test_ot_protocols(
     malcolm_url,
     artifact_hash_map,
 ):
-"""test_ot_protocols
+    """test_ot_protocols
 
-Checks for the existence of various Zeek logs (event.dataset) related to ICS/OT protocols
+    Checks for the existence of various Zeek logs (event.dataset) related to ICS/OT protocols
 
-Args:
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
-"""
+    Args:
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+    """
     assert all([artifact_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
 
     response = requests.post(
@@ -176,15 +176,15 @@ def test_ics_best_guess(
     malcolm_url,
     artifact_hash_map,
 ):
-"""test_ics_best_guess
+    """test_ics_best_guess
 
-Check that the zeek.bestguess.* fields are generated
+    Check that the zeek.bestguess.* fields are generated
 
-Args:
-    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-    malcolm_url (str): URL for connecting to the Malcolm instance
-    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
-"""
+    Args:
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+    """
     for field in [
         "zeek.bestguess.category",
         "zeek.bestguess.name",
