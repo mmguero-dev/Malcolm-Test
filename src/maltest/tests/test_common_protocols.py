@@ -9,34 +9,33 @@ from stream_unzip import stream_unzip, AE_2, AES_256
 
 LOGGER = logging.getLogger(__name__)
 
+# You'll notice I don't use all the PCAPs in pcap/protocols here: I've opted to use some
+#   other PCAPs also in the repository which trigger the same parsers but which are smaller
+#   and thus faster to process.
 UPLOAD_ARTIFACTS = [
-    "pcap/protocols/DCERPC.pcap",
-    "pcap/protocols/DHCP.pcap",
-    "pcap/protocols/DNS.pcap",
-    "pcap/protocols/FTP.pcap",
-    "pcap/protocols/HTTP_1.pcap",
-    "pcap/protocols/HTTP_2.pcap",
+    "pcap/other/Digital Bond S4/WinXP.pcap",
+    "pcap/plugins/CVE-2021-1675/PrintNightmare.pcap",
+    "pcap/plugins/CVE-2021-41773/apache_exploit_success.pcap",
+    "pcap/plugins/cve-2021-44228/2021-12-11-thru-13-server-activity-with-log4j-attempts.pcap",
+    "pcap/plugins/cve-2021-44228/log4j-attack.pcap",
+    "pcap/plugins/smb_mimikatz_copy_to_host.pcap",
+    "pcap/plugins/zeek-agenttesla-detector/0e328ab7-12b2-4843-8717-a5b3ebef33a8.pcap",
+    "pcap/plugins/zeek-agenttesla-detector/a30789ce-1e1c-4f96-a097-78c34b9fb612.pcap",
+    "pcap/plugins/zeek-agenttesla-detector/f9421792-7d2c-47d3-90e0-07eb54ae12fa.pcap",
+    "pcap/plugins/zeek-EternalSafety/esteemedaudit-failed-XPSP2.pcap",
+    "pcap/plugins/zeek-EternalSafety/eternalchampion.pcap",
+    "pcap/protocols/HTTP_websocket.pcap",
     "pcap/protocols/IPsec.pcap",
     "pcap/protocols/IRC.pcap",
-    "pcap/protocols/KRB5.pcap",
-    "pcap/protocols/LDAP.pcap",
     "pcap/protocols/MySQL.pcap",
-    "pcap/protocols/NTLM.pcap",
-    "pcap/protocols/NTP.pcap",
     "pcap/protocols/OpenVPN.pcap",
     "pcap/protocols/OSPF.pcap",
     "pcap/protocols/QUIC.pcap",
     "pcap/protocols/RADIUS.pcap",
-    "pcap/protocols/RDP.pcap",
     "pcap/protocols/RFB.pcap",
-    "pcap/protocols/SIP.pcap",
-    "pcap/protocols/SMB.pcap",
-    "pcap/protocols/SMTP.pcap",
-    "pcap/protocols/SNMP.pcap",
     "pcap/protocols/SSH.pcap",
     "pcap/protocols/SSL.pcap",
     "pcap/protocols/STUN.pcap",
-    "pcap/protocols/Syslog.pcap",
     "pcap/protocols/Telnet.pcap",
     "pcap/protocols/TFTP.pcap",
     "pcap/protocols/Tunnels.pcap",
@@ -123,6 +122,7 @@ def test_common_protocols(
         item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), ['event.dataset', 'buckets'], [])
     }
     LOGGER.debug(buckets)
+    LOGGER.debug([x for x in EXPECTED_DATASETS if (buckets.get(x, 0) == 0)])
     assert all([(buckets.get(x, 0) > 0) for x in EXPECTED_DATASETS])
 
 

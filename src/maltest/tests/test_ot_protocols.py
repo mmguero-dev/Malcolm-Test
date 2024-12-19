@@ -5,8 +5,19 @@ import logging
 
 LOGGER = logging.getLogger(__name__)
 
+# You'll notice I don't use all the PCAPs in pcap/protocols here: I've opted to use some
+#   other PCAPs also in the repository which trigger the same parsers but which are smaller
+#   and thus faster to process.
 UPLOAD_ARTIFACTS = [
-    "pcap/protocols/BACnet.pcap",
+    "pcap/other/Digital Bond S4/Advantech.pcap",
+    "pcap/other/Digital Bond S4/BACnet_FIU.pcap",
+    "pcap/other/Digital Bond S4/BACnet_Host.pcap",
+    "pcap/other/Digital Bond S4/iFix_Client86.pcap",
+    "pcap/other/Digital Bond S4/iFix_Server119.pcap",
+    "pcap/other/Digital Bond S4/MicroLogix56.pcap",
+    "pcap/other/Digital Bond S4/Modicon.pcap",
+    "pcap/other/Digital Bond S4/WinXP.pcap",
+    "pcap/protocols/BACnet_device_control.pcap",
     "pcap/protocols/BSAP.pcap",
     "pcap/protocols/DNP3.pcap",
     "pcap/protocols/ENIP.pcap",
@@ -20,14 +31,6 @@ UPLOAD_ARTIFACTS = [
     "pcap/protocols/S7comm.pcap",
     "pcap/protocols/Synchrophasor.pcap",
     "pcap/protocols/TDS.pcap",
-    "pcap/other/Digital Bond S4/Advantech.pcap",
-    "pcap/other/Digital Bond S4/BACnet_FIU.pcap",
-    "pcap/other/Digital Bond S4/BACnet_Host.pcap",
-    "pcap/other/Digital Bond S4/MicroLogix56.pcap",
-    "pcap/other/Digital Bond S4/Modicon.pcap",
-    "pcap/other/Digital Bond S4/WinXP.pcap",
-    "pcap/other/Digital Bond S4/iFix_Client86.pcap",
-    "pcap/other/Digital Bond S4/iFix_Server119.pcap",
 ]
 
 # TODO:
@@ -38,8 +41,8 @@ UPLOAD_ARTIFACTS = [
 # "genisys",
 EXPECTED_DATASETS = [
     "bacnet",
-    "bacnet_device_control",
     "bacnet_discovery",
+    "bacnet_device_control",
     "bacnet_property",
     "bestguess",
     "bsap_ip_header",
@@ -152,6 +155,7 @@ def test_ot_protocols(
         item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), ['event.dataset', 'buckets'], [])
     }
     LOGGER.debug(buckets)
+    LOGGER.debug([x for x in EXPECTED_DATASETS if (buckets.get(x, 0) == 0)])
     assert all([(buckets.get(x, 0) > 0) for x in EXPECTED_DATASETS])
 
 
