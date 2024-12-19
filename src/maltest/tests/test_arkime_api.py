@@ -30,6 +30,14 @@ def test_arkime_views(
     malcolm_url,
     malcolm_http_auth,
 ):
+"""test_arkime_views
+
+Test the Arkime views API
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+"""
     response = requests.get(
         f"{malcolm_url}/arkime/api/views",
         headers={"Content-Type": "application/json"},
@@ -50,6 +58,15 @@ def test_arkime_sessions(
     malcolm_http_auth,
     artifact_hash_map,
 ):
+"""test_arkime_sessions
+
+Test the Arkime sessions API
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+"""
     for viewName in EXPECTED_VIEWS:
         response = requests.post(
             f"{malcolm_url}/arkime/api/sessions",
@@ -77,6 +94,15 @@ def test_arkime_connections(
     malcolm_http_auth,
     artifact_hash_map,
 ):
+"""test_arkime_connections
+
+Test the Arkime connections API
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+"""
     response = requests.post(
         f"{malcolm_url}/arkime/api/connections",
         headers={"Content-Type": "application/json"},
@@ -102,6 +128,15 @@ def test_arkime_pcap_payload(
     malcolm_http_auth,
     artifact_hash_map,
 ):
+"""test_arkime_pcap_payload
+
+Test the Arkime sessions/pcap API (download a PCAP payload)
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+"""
     response = requests.post(
         f"{malcolm_url}/arkime/api/sessions",
         headers={"Content-Type": "application/json"},
@@ -140,6 +175,15 @@ def test_arkime_spiview(
     malcolm_http_auth,
     artifact_hash_map,
 ):
+"""test_arkime_spiview
+
+Test the Arkime SPIview API
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+"""
     response = requests.post(
         f"{malcolm_url}/arkime/api/spiview",
         headers={"Content-Type": "application/json"},
@@ -167,6 +211,15 @@ def test_arkime_spigraph(
     malcolm_http_auth,
     artifact_hash_map,
 ):
+"""test_arkime_spigraph
+
+Test the Arkime SPIgraph API
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+"""
     response = requests.post(
         f"{malcolm_url}/arkime/api/spigraph",
         headers={"Content-Type": "application/json"},
@@ -193,6 +246,14 @@ def test_arkime_files(
     malcolm_url,
     malcolm_http_auth,
 ):
+"""test_arkime_files
+
+Test the Arkime files API
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+"""
     response = requests.get(
         f"{malcolm_url}/arkime/api/files",
         headers={"Content-Type": "application/json"},
@@ -211,6 +272,14 @@ def test_arkime_fields(
     malcolm_url,
     malcolm_http_auth,
 ):
+"""test_arkime_fields
+
+Test the Arkime fields API
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+"""
     response = requests.get(
         f"{malcolm_url}/arkime/api/fields",
         headers={"Content-Type": "application/json"},
@@ -229,6 +298,14 @@ def test_arkime_valueactions(
     malcolm_url,
     malcolm_http_auth,
 ):
+"""test_arkime_valueactions
+
+Test the Arkime valueactions API
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+"""
     response = requests.get(
         f"{malcolm_url}/arkime/api/valueactions",
         headers={"Content-Type": "application/json"},
@@ -247,6 +324,14 @@ def test_arkime_fieldactions(
     malcolm_url,
     malcolm_http_auth,
 ):
+"""test_arkime_fieldactions
+
+Test the Arkime fieldactions API
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+"""
     response = requests.get(
         f"{malcolm_url}/arkime/api/fieldactions",
         headers={"Content-Type": "application/json"},
@@ -267,6 +352,15 @@ def test_arkime_unique(
     malcolm_http_auth,
     artifact_hash_map,
 ):
+"""test_arkime_unique
+
+Test the Arkime unique API
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+"""
     response = requests.post(
         f"{malcolm_url}/arkime/api/unique",
         headers={"Content-Type": "application/json"},

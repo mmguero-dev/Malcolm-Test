@@ -96,11 +96,20 @@ EXPECTED_DATASETS = [
 
 @pytest.mark.mapi
 @pytest.mark.pcap
-def test_common_protocols(
+def test_common_protocols_zeek(
     malcolm_http_auth,
     malcolm_url,
     artifact_hash_map,
 ):
+"""test_common_protocols_zeek
+
+Checks for the existence of various Zeek logs (event.dataset)
+
+Args:
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+"""
     assert all([artifact_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
 
     response = requests.post(
@@ -133,6 +142,15 @@ def test_mapi_document_lookup(
     malcolm_http_auth,
     artifact_hash_map,
 ):
+"""test_mapi_document_lookup
+
+Test the /mapi/document API by looking up the JSON document for a zeek log
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+"""
     response = requests.post(
         f"{malcolm_url}/mapi/document",
         headers={"Content-Type": "application/json"},
@@ -166,6 +184,17 @@ def test_extracted_files_download(
     malcolm_url,
     malcolm_http_auth,
 ):
+"""test_extracted_files_download
+
+List the quarantined .exe files from the /extracted-files/quarantine page, then download one of them.
+    With the assumption that the downloaded .exe file is zipped (the test suite's default) and
+    encrypted with a password of "infected" (the test suite's default), it attempts to decrypt
+    and unzip the file.
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+"""
     response = requests.get(
         f"{malcolm_url}/extracted-files/quarantine",
         allow_redirects=True,
@@ -213,6 +242,16 @@ def test_freq(
     malcolm_url,
     artifact_hash_map,
 ):
+"""test_freq
+
+Test that the event.freq_score_v1 and event.freq_score_v2 fields were calculated. These fields
+    represent the entropy of dns.host values.
+
+Args:
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+"""
     response = requests.post(
         f"{malcolm_url}/mapi/agg/dns.host,event.freq_score_v1,event.freq_score_v2",
         headers={"Content-Type": "application/json"},
@@ -250,6 +289,15 @@ def test_geo_asn(
     malcolm_url,
     artifact_hash_map,
 ):
+"""test_geo_asn
+
+Test that GeoIP and ASN lookups were performed for Zeek and Suricata logs
+
+Args:
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+"""
     for provider in ('zeek', 'suricata'):
         for field in ('destination.geo.city_name', 'source.geo.city_name', 'destination.as.full', 'source.as.full'):
             response = requests.post(
@@ -280,6 +328,16 @@ def test_conn_info(
     malcolm_url,
     artifact_hash_map,
 ):
+"""test_conn_info
+
+Check that connection-related enrichment information (source and destination OUIs, direction, transport,
+    user agent, etc.) are calculated.
+
+Args:
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+"""
     for provider in ['zeek']:
         for field in (
             'source.oui',

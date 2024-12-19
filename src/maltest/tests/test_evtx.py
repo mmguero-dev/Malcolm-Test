@@ -17,6 +17,17 @@ def test_all_evtx(
     malcolm_url,
     artifact_hash_map,  # actually artifact_hash_map holds evtx files too...
 ):
+"""test_all_evtx
+
+Check the existance of the event.module value of winlog, which is populated from the parsing of
+    Windows event logs. Note that the "doctype": "host" filter is used passed to the mapi/agg API
+    so that host log data is queried instead of network log data.
+
+Args:
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+"""
     assert all([artifact_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
 
     response = requests.post(

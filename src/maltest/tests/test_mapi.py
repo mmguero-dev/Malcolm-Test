@@ -13,6 +13,14 @@ def test_mapi_indices(
     malcolm_url,
     malcolm_http_auth,
 ):
+"""test_mapi_indices
+
+Test the /mapi/indices API
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+"""
     response = requests.get(
         f"{malcolm_url}/mapi/indices",
         headers={"Content-Type": "application/json"},
@@ -31,6 +39,14 @@ def test_mapi_fields(
     malcolm_url,
     malcolm_http_auth,
 ):
+"""test_mapi_fields
+
+Test the /mapi/fields API
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+"""
     response = requests.get(
         f"{malcolm_url}/mapi/fields",
         headers={"Content-Type": "application/json"},
@@ -51,6 +67,14 @@ def test_mapi_dashboard_export(
     malcolm_url,
     malcolm_http_auth,
 ):
+"""test_mapi_dashboard_export
+
+Test the /mapi/dashboard-export API by exporting the "Overview" dashboard and checking its title
+
+Args:
+    malcolm_url (str): URL for connecting to the Malcolm instance
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+"""
     response = requests.get(
         f"{malcolm_url}/mapi/dashboard-export/0ad3d7c2-3441-485e-9dfe-dbb22e84e576",
         headers={"Content-Type": "application/json"},
@@ -69,6 +93,14 @@ def test_event_log_mapi(
     malcolm_http_auth,
     malcolm_url,
 ):
+"""test_event_log_mapi
+
+Test the /mapi/event API to log an event via the loopback alert webhook
+
+Args:
+    malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    malcolm_url (str): URL for connecting to the Malcolm instance
+"""
     alert = {
         "alert": {
             "monitor": {"name": "Malcolm API Loopback Monitor"},
