@@ -63,6 +63,8 @@ UPLOAD_ARTIFACTS = [
     "pcap/plugins/zeek-EternalSafety/eternalblue-success-unpatched-win7.pcap",
     # precurse/zeek-httpattacks
     "pcap/plugins/zeek-httpattacks/http.trace",
+    # corelight/zeek-long-connections
+    "pcap/plugins/zeek-long-connections/long_connection.pcap",
     # cybera/zeek-sniffpass
     "pcap/plugins/zeek-sniffpass/http_post.trace",
     # corelight/zeek-xor-exe-plugin
@@ -125,6 +127,8 @@ EXPECTED_CATEGORIES = [
     "EternalSafety",
     # precurse/zeek-httpattacks
     "HTTPATTACKS",
+    # corelight/zeek-long-connections
+    "LongConnection",
     # corelight/zeek-netsupport-detector
     "NetSupport",
     # corelight/pingback
