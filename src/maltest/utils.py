@@ -539,7 +539,7 @@ class MalcolmVM(object):
             self.provisionEnvArgs.extend(
                 [
                     '--set',
-                    f"env.{varName.removeprefix("MALCOLM_")}={varVal}",
+                    f"env.{varName.removeprefix('MALCOLM_')}={varVal}",
                 ]
             )
 

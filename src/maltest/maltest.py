@@ -297,7 +297,7 @@ def main():
         metavar='<string>',
         type=str,
         default=os.getenv('MALCOLM_TEST_PATH', os.path.join(script_path, 'tests')),
-        help=f'Path containing test definitions (e.g., {os.path.join(script_path, 'tests')})',
+        help=f"Path containing test definitions (e.g., {os.path.join(script_path, 'tests')})",
     )
     testArgGroup.add_argument(
         '-a',
