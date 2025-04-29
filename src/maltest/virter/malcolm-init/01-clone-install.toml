@@ -12,9 +12,6 @@ IMAGE_FILE = ""
 MALCOLM_PROFILE = "true"
 DARK_MODE = "true"
 HTTPS = "true"
-LDAP = "false"
-LDAP_MODE = "openldap"
-LDAP_START_TLS = "false"
 RESTART_MALCOLM = "true"
 REVERSE_PROXIED = "false"
 TRAEFIK_HOST = ""
@@ -26,7 +23,6 @@ OPENSEARCH = "opensearch-local"
 OPENSEARCH_MEMORY = ""
 OPENSEARCH_URL = ""
 OPENSEARCH_SSL_VERIFY = "false"
-OPENSEARCH_COMPRESS_SNAPSHOTS = "false"
 OPENSEARCH_SECONDARY = ""
 OPENSEARCH_SECONDARY_URL = ""
 OPENSEARCH_SECONDARY_SSL_VERIFY = "false"
@@ -38,6 +34,8 @@ LOGSTASH_EXPOSE = "false"
 OPENSEARCH_EXPOSE = "false"
 FILEBEAT_TCP_EXPOSE = "false"
 SFTP_EXPOSE = "false"
+SYSLOG_PORT_UDP = "0"
+SYSLOG_PORT_TCP = "0"
 PCAP_PATH = ""
 ZEEK_PATH = ""
 SURICATA_PATH = ""
@@ -74,7 +72,7 @@ EXTRACTED_FILE_YARA = "true"
 EXTRACTED_FILE_CAPA = "true"
 VIRUSTOTAL_API_KEY = ""
 FILE_SCAN_RULE_UPDATE = "false"
-NETBOX = "true"
+NETBOX = "local"
 NETBOX_ENRICH = "true"
 NETBOX_AUTOPOPULATE = "true"
 NETBOX_AUTO_PREFIXES = "true"
@@ -133,9 +131,6 @@ python3 ./scripts/install.py --defaults \
     --malcolm-profile "$MALCOLM_PROFILE" \
     --dark-mode "$DARK_MODE" \
     --https "$HTTPS" \
-    --ldap "$LDAP" \
-    --ldap-mode "$LDAP_MODE" \
-    --ldap-start-tls "$LDAP_START_TLS" \
     --restart-malcolm "$RESTART_MALCOLM" \
     --reverse-proxied "$REVERSE_PROXIED" \
     --traefik-host "$TRAEFIK_HOST" \
@@ -147,7 +142,6 @@ python3 ./scripts/install.py --defaults \
     --opensearch-memory "$OPENSEARCH_MEMORY" \
     --opensearch-url "$OPENSEARCH_URL" \
     --opensearch-ssl-verify "$OPENSEARCH_SSL_VERIFY" \
-    --opensearch-compress-snapshots "$OPENSEARCH_COMPRESS_SNAPSHOTS" \
     --opensearch-secondary "$OPENSEARCH_SECONDARY" \
     --opensearch-secondary-url "$OPENSEARCH_SECONDARY_URL" \
     --opensearch-secondary-ssl-verify "$OPENSEARCH_SECONDARY_SSL_VERIFY" \
@@ -159,6 +153,8 @@ python3 ./scripts/install.py --defaults \
     --opensearch-expose "$OPENSEARCH_EXPOSE" \
     --filebeat-tcp-expose "$FILEBEAT_TCP_EXPOSE" \
     --sftp-expose "$SFTP_EXPOSE" \
+    --syslog-tcp-port "$SYSLOG_PORT_TCP" \
+    --syslog-udp-port "$SYSLOG_PORT_UDP" \
     --pcap-path "$PCAP_PATH" \
     --zeek-path "$ZEEK_PATH" \
     --suricata-path "$SURICATA_PATH" \

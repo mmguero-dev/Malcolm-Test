@@ -3,6 +3,7 @@ version = 1
 [env]
 VERBOSE = "false"
 
+AUTH_METHOD = 'basic'
 # username: maltest
 # password: M@lc0lm
 AUTH_USERNAME = 'maltest'
@@ -20,12 +21,16 @@ if [[ -d "$HOME"/Malcolm ]]; then
     python3 ./scripts/auth_setup \
         --verbose "$VERBOSE" \
         --auth-noninteractive \
+        --auth-method "$AUTH_METHOD" \
         --auth-admin-username "$AUTH_USERNAME" \
         --auth-admin-password-openssl "$AUTH_PASSWORD_OPENSSL" \
         --auth-admin-password-htpasswd "$AUTH_PASSWORD_HTPASSWD" \
         --auth-generate-webcerts \
         --auth-generate-fwcerts \
-        --auth-generate-netbox-passwords || true
+        --auth-generate-netbox-passwords \
+        --auth-generate-redis-password \
+        --auth-generate-postgres-password \
+        --auth-generate-keycloak-db-password || true
     popd
 fi
 '''
