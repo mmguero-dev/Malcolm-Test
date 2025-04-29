@@ -11,16 +11,16 @@ if ! dpkg -s podman &>/dev/null; then
       sudo tee /usr/share/keyrings/home_alvistack.gpg >/dev/null
 
   sudo tee /etc/apt/sources.list.d/alvistack.list > /dev/null <<'EOT'
-deb [signed-by=/usr/share/keyrings/home_alvistack.gpg] http://mirror.aardsoft.fi/opensuse/repositories/home:/alvistack/Debian_12/ /
+deb [signed-by=/usr/share/keyrings/home_alvistack.gpg] http://mirrorcache-jp.opensuse.org/repositories/home:/alvistack/Debian_12/ /
 EOT
 
   sudo tee /etc/apt/preferences.d/99-alvistack > /dev/null <<'EOT'
 Package: *
-Pin: origin mirror.aardsoft.fi
+Pin: origin mirrorcache-jp.opensuse.org
 Pin-Priority: 1
 
-Package: buildah catatonit conmon containernetworking containernetworking-plugins containers-common cri-o-runc crun libcharon-standard-plugins libslirp0 passt podman podman-aardvark-dns podman-netavark slirp4netns
-Pin: origin mirror.aardsoft.fi
+Package: buildah catatonit conmon containernetworking containernetworking-plugins containers-common cri-o-runc crun libcharon-standard-plugins libslirp0 passt podman podman-aardvark-dns podman-netavark python3-podman-compose slirp4netns
+Pin: origin mirrorcache-jp.opensuse.org
 Pin-Priority: 500
 EOT
 
