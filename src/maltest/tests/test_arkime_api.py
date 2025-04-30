@@ -16,7 +16,6 @@ EXPECTED_VIEWS = [
     "Suricata Alerts",
     "Suricata Logs",
     "Uninventoried Internal Assets",
-    "Uninventoried Observed Services",
     "Zeek Exclude conn.log",
     "Zeek Logs",
     "Zeek conn.log",
