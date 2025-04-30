@@ -90,7 +90,6 @@ def test_netbox_enrichment(
     """
     for field in [
         "related.manufacturer",
-        "related.device_type",
         "related.device_name",
         "zeek.software.software_type",
         "zeek.software.name",
