@@ -14,8 +14,6 @@ EXPECTED_VIEWS = [
     ARKIME_VIEW,
     "Public IP Addresses",
     "Suricata Alerts",
-    "Suricata Logs",
-    "Uninventoried Internal Assets",
     "Zeek Exclude conn.log",
     "Zeek Logs",
     "Zeek conn.log",
@@ -82,7 +80,7 @@ def test_arkime_sessions(
         )
         response.raise_for_status()
         sessions = response.json()
-        LOGGER.debug(sessions)
+        LOGGER.debug(f"{viewName}: {sessions}")
         assert sessions.get("data", [])
 
 

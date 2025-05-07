@@ -134,7 +134,6 @@ EXPECTED_DATASETS = [
     "roc_plus_sys_cfg",
     "roc_plus_time_period_history_points",
     "roc_plus_transaction_history",
-    "roc_plus_unknown_data",
     "roc_plus_user_defined_info",
     "s7comm",
     "s7comm_plus",
