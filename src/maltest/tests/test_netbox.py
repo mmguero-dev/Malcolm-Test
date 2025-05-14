@@ -112,3 +112,111 @@ def test_netbox_enrichment(
         buckets = {item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), [field, 'buckets'], [])}
         LOGGER.debug(buckets)
         assert buckets
+
+
+@pytest.mark.netbox
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_netbox_auto_prefixes(
+    malcolm_http_auth,
+    malcolm_url,
+    artifact_hash_map,
+):
+    response = requests.get(
+        f"{malcolm_url}/mapi/netbox/ipam/prefixes/",
+        headers={"Content-Type": "application/json"},
+        json={
+            "format": "json",
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+
+    buckets = [
+        {
+            "prefix": item["prefix"],
+            "description": item["description"],
+            "site": item["scope"]["name"] if item.get("scope") else None,
+            "tags": [tag["slug"] for tag in item.get("tags", [])],
+        }
+        for item in response.json().get("results", [])
+    ]
+    LOGGER.debug(buckets)
+    assert all("malcolm-autopopulated" in p["tags"] for p in buckets)
+    assert len({(p["site"], p["prefix"]) for p in buckets}) == len(
+        buckets
+    ), "Duplicate prefixes found for the same site"
+    assert buckets
+
+
+@pytest.mark.netbox
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_netbox_auto_devices(
+    malcolm_http_auth,
+    malcolm_url,
+    artifact_hash_map,
+):
+    response = requests.get(
+        f"{malcolm_url}/mapi/netbox/dcim/devices/",
+        headers={"Content-Type": "application/json"},
+        json={
+            "format": "json",
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+
+    buckets = [
+        {
+            "name": d["name"],
+            "site": d["site"]["name"] if d.get("site") else None,
+            "status": d["status"]["label"] if d.get("status") else None,
+            "role": d["role"]["name"] if d.get("role") else None,
+            "primary_ip": d["primary_ip"]["address"] if d.get("primary_ip") else None,
+            "tags": [tag["slug"] for tag in d.get("tags", [])],
+        }
+        for d in response.json().get("results", [])
+    ]
+    LOGGER.debug(buckets)
+    assert all("malcolm-autopopulated" in p["tags"] for p in buckets)
+    assert any("hostname-unknown" in p["tags"] for p in buckets)
+    assert any("manufacturer-unknown" in p["tags"] for p in buckets)
+    assert all(p["primary_ip"] for p in buckets)
+    assert buckets
+
+
+@pytest.mark.netbox
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_netbox_auto_manuf(
+    malcolm_http_auth,
+    malcolm_url,
+    artifact_hash_map,
+):
+    response = requests.get(
+        f"{malcolm_url}/mapi/netbox/dcim/manufacturers/",
+        headers={"Content-Type": "application/json"},
+        json={
+            "format": "json",
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+
+    buckets = [
+        {
+            "name": m["name"],
+            "tags": [tag["slug"] for tag in m.get("tags", [])],
+        }
+        for m in response.json().get("results", [])
+    ]
+    LOGGER.debug(buckets)
+    assert any("malcolm-autopopulated" in m["tags"] for m in buckets)
+    assert buckets
