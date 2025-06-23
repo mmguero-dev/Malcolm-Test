@@ -26,7 +26,7 @@ dependencies = [
     'psutil==7.0.0',
     'pytest==8.3.5',
     'python-magic==0.4.27',
-    'requests==2.32.3',
+    'requests==2.32.4',
     'stream-unzip==0.0.99',
     'tomli-w==1.2.0',
     'tomli==2.2.1'
