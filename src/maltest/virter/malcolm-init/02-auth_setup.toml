@@ -30,7 +30,8 @@ if [[ -d "$HOME"/Malcolm ]]; then
         --auth-generate-netbox-passwords \
         --auth-generate-redis-password \
         --auth-generate-postgres-password \
-        --auth-generate-keycloak-db-password || true
+        --auth-generate-keycloak-db-password \
+        --auth-generate-opensearch-internal-creds || true
     popd
 fi
 '''
