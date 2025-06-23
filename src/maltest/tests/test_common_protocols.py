@@ -37,6 +37,7 @@ UPLOAD_ARTIFACTS = [
     "pcap/protocols/SSH.pcap",
     "pcap/protocols/SSL.pcap",
     "pcap/protocols/STUN.pcap",
+    "pcap/protocols/Synchrophasor.pcap",
     "pcap/protocols/Telnet.pcap",
     "pcap/protocols/TFTP.pcap",
     "pcap/protocols/Tunnels.pcap",

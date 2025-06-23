@@ -22,6 +22,7 @@ UPLOAD_ARTIFACTS = [
     # corelight/CVE-2022-24497
     "pcap/plugins/CVE-2022-24497/CVE-2022-24497.pcap",
     # corelight/cve-2022-22954
+    "pcap/plugins/cve-2022-22954/attempt-constructed.pcap",
     "pcap/plugins/cve-2022-22954/successful-constructed.pcap",
     # corelight/CVE-2022-30216
     "pcap/plugins/CVE-2022-30216/successful.pcap",
