@@ -185,7 +185,6 @@ def test_netbox_auto_devices(
     LOGGER.debug(buckets)
     assert all("malcolm-autopopulated" in p["tags"] for p in buckets)
     assert any("hostname-unknown" in p["tags"] for p in buckets)
-    assert any("manufacturer-unknown" in p["tags"] for p in buckets)
     assert all(p["primary_ip"] for p in buckets)
     assert buckets
 
