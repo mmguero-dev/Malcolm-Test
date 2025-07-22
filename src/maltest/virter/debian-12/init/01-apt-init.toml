@@ -51,4 +51,10 @@ sudo apt-get -y -q --no-install-recommends install \
     zip \
     zlib1g
 sudo ln -s -r -f /usr/bin/batcat /usr/bin/bat
+
+cd /tmp
+curl -sSL "https://github.com/eza-community/eza/releases/latest/download/eza_$(uname -m)-unknown-linux-gnu.tar.gz" | tar xzvf - >/dev/null 2>&1
+sudo cp /tmp/eza /usr/bin/eza
+rm -f /tmp/eza
+sudo chmod 755 /usr/bin/eza
 '''

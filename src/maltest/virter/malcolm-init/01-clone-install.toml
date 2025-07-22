@@ -12,6 +12,8 @@ IMAGE_FILE = ""
 MALCOLM_PROFILE = "true"
 DARK_MODE = "true"
 HTTPS = "true"
+NGINX_RESOLVER_IPV4 = "true"
+NGINX_RESOLVER_IPV6 = "false"
 RESTART_MALCOLM = "true"
 REVERSE_PROXIED = "false"
 TRAEFIK_HOST = ""
@@ -77,6 +79,7 @@ NETBOX_ENRICH = "true"
 NETBOX_AUTOPOPULATE = "true"
 NETBOX_AUTO_PREFIXES = "true"
 NETBOX_SITE_NAME = ""
+NETBOX_AUTO_POPULATE_SUBNETS = "10.0.0.0/8,!10.100.0.0/16"
 LIVE_CAPTURE_IFACE = ""
 LIVE_CAPTURE_FILTER = ""
 LIVE_CAPTURE_IFACE_TWEAK = "false"
@@ -131,6 +134,8 @@ python3 ./scripts/install.py --defaults \
     --malcolm-profile "$MALCOLM_PROFILE" \
     --dark-mode "$DARK_MODE" \
     --https "$HTTPS" \
+    --nginx-resolver-ipv4 "$NGINX_RESOLVER_IPV4" \
+    --nginx-resolver-ipv6 "$NGINX_RESOLVER_IPV6" \
     --restart-malcolm "$RESTART_MALCOLM" \
     --reverse-proxied "$REVERSE_PROXIED" \
     --traefik-host "$TRAEFIK_HOST" \
@@ -196,6 +201,7 @@ python3 ./scripts/install.py --defaults \
     --netbox-autopopulate "$NETBOX_AUTOPOPULATE" \
     --netbox-auto-prefixes "$NETBOX_AUTO_PREFIXES" \
     --netbox-site-name "$NETBOX_SITE_NAME" \
+    --netbox-autopopulate-filter "$NETBOX_AUTO_POPULATE_SUBNETS" \
     --live-capture-iface "$LIVE_CAPTURE_IFACE" \
     --live-capture-filter "$LIVE_CAPTURE_FILTER" \
     --live-capture-iface-tweak "$LIVE_CAPTURE_IFACE_TWEAK" \

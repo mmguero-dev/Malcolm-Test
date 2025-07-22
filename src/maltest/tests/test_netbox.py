@@ -89,10 +89,13 @@ def test_netbox_enrichment(
         artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
     """
     for field in [
-        "related.manufacturer",
+        "destination.device.uninventoried",
         "related.device_name",
-        "zeek.software.software_type",
+        "related.manufacturer",
+        "related.uninventoried",
+        "source.device.uninventoried",
         "zeek.software.name",
+        "zeek.software.software_type",
     ]:
         response = requests.post(
             f"{malcolm_url}/mapi/agg/{field}",
