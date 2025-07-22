@@ -53,6 +53,7 @@ MALCOLM_READY_REQUIRED_COMPONENTS = [
     'arkime',
     'logstash_lumberjack',
     'logstash_pipelines',
+    'netbox',
     'opensearch',
     'pcap_monitor',
 ]
