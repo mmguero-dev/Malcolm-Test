@@ -240,6 +240,46 @@ def test_extracted_files_download(
 
 @pytest.mark.mapi
 @pytest.mark.pcap
+def test_iana_lookups(
+    malcolm_http_auth,
+    malcolm_url,
+    artifact_hash_map,
+):
+    """test_iana_lookups
+
+    Check for fields populated by IANA lookup (see cisagov/Malcolm#705)
+
+    Args:
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+    """
+    for field in [
+        "zeek.known_services.iana_name",
+        "zeek.known_services.iana_description",
+    ]:
+        response = requests.post(
+            f"{malcolm_url}/mapi/agg/{field}",
+            headers={"Content-Type": "application/json"},
+            json={
+                "from": "0",
+                "filter": {
+                    f"!{field}": None,
+                    "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                },
+            },
+            allow_redirects=True,
+            auth=malcolm_http_auth,
+            verify=False,
+        )
+        response.raise_for_status()
+        buckets = {item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), [field, 'buckets'], [])}
+        LOGGER.debug(buckets)
+        assert buckets
+
+
+@pytest.mark.mapi
+@pytest.mark.pcap
 def test_freq(
     malcolm_http_auth,
     malcolm_url,

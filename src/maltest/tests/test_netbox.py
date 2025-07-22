@@ -14,6 +14,7 @@ UPLOAD_ARTIFACTS = [
     "pcap/other/Digital Bond S4/WinXP.pcap",
     "pcap/other/Digital Bond S4/iFix_Client86.pcap",
     "pcap/other/Digital Bond S4/iFix_Server119.pcap",
+    "pcap/plugins/zeek-EternalSafety/eternalchampion.pcap",
 ]
 
 NETBOX_ENRICH = True
@@ -188,6 +189,7 @@ def test_netbox_auto_devices(
     LOGGER.debug(buckets)
     assert all("malcolm-autopopulated" in p["tags"] for p in buckets)
     assert any("hostname-unknown" in p["tags"] for p in buckets)
+    assert any("hostname-unknown" not in p["tags"] for p in buckets)
     assert all(p["primary_ip"] for p in buckets)
     assert buckets
 
@@ -222,3 +224,73 @@ def test_netbox_auto_manuf(
     LOGGER.debug(buckets)
     assert any("malcolm-autopopulated" in m["tags"] for m in buckets)
     assert buckets
+
+
+@pytest.mark.netbox
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_netbox_auto_subnet_filters(
+    malcolm_http_auth,
+    malcolm_url,
+    artifact_hash_map,
+):
+    # this should *NOT* return anything, because:
+    #   NETBOX_AUTO_POPULATE_SUBNETS=*:10.0.0.0/8,!10.100.0.0/16
+    response = requests.get(
+        f"{malcolm_url}/mapi/netbox/ipam/prefixes/?prefix=10.100.0.0/16",
+        headers={"Content-Type": "application/json"},
+        json={
+            "format": "json",
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+
+    buckets = [
+        {
+            "prefix": item["prefix"],
+            "description": item["description"],
+            "site": item["scope"]["name"] if item.get("scope") else None,
+            "tags": [tag["slug"] for tag in item.get("tags", [])],
+        }
+        for item in response.json().get("results", [])
+    ]
+    LOGGER.debug(buckets)
+    assert not buckets
+
+
+@pytest.mark.netbox
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_netbox_api_endpoints(
+    malcolm_http_auth,
+    malcolm_url,
+    artifact_hash_map,
+):
+    for uri in [
+        "mapi/netbox",
+        "mapi/netbox/api",
+        "netbox/api",
+    ]:
+        for trailing in [
+            "",
+            "/",
+            "/dcim/sites",
+            "/dcim/sites/",
+        ]:
+            response = requests.get(
+                f"{malcolm_url}/{uri}{trailing}",
+                headers={"Content-Type": "application/json"},
+                json={
+                    "format": "json",
+                },
+                allow_redirects=True,
+                auth=malcolm_http_auth,
+                verify=False,
+            )
+            response.raise_for_status()
+            results = response.json()
+            LOGGER.debug(f"{uri}{trailing}: {results}")
+            assert results.get('dcim', results.get('count', 0))

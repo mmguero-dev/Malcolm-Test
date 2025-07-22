@@ -69,3 +69,27 @@ def test_db_health(
     )
     LOGGER.debug(healthDict)
     assert healthDict.get("status", "unknown") in ["green", "yellow"]
+
+
+def test_robots(
+    malcolm_url,
+    malcolm_http_auth,
+):
+    """test_robots
+
+    Test that /robots.txt is returned
+
+    Args:
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+    """
+    response = requests.get(
+        f"{malcolm_url}/robots.txt",
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    responseData = ";".join(response.text.splitlines())
+    LOGGER.debug(responseData)
+    assert responseData
