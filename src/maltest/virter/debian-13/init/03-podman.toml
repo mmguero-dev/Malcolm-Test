@@ -11,6 +11,7 @@ if ! dpkg -s podman &>/dev/null; then
       catatonit \
       crun \
       fuse-overlayfs \
+      nftables \
       passt \
       podman \
       slirp4netns \
