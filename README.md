@@ -69,7 +69,7 @@ Virtual machine specifications:
   -d <integer>, --disk <integer>
                         Disk size (GB) for virtual Malcolm instance
   -i <string>, --image <string>
-                        Malcolm virtual instance base image name (e.g., debian-12)
+                        Malcolm virtual instance base image name (e.g., debian-13)
   --image-user <string>
                         Malcolm virtual instance base image username (e.g., debian)
   --vm-name-prefix <string>
@@ -302,7 +302,7 @@ Package source highlights (under [`./src/maltest`](src/maltest)):
 
 * 🐍 [`maltest.py`](#Usage) - A Python script for running Malcolm in a VM with virter
 * 🗁 `virter/` - A directory structure containing TOML files for [provisioning](https://github.com/LINBIT/virter/blob/master/doc/provisioning.md) the virter VMs in which Malcolm will run. Its subdirectories are arranged thusly:
-    - 🗁 `debian-12/` - A directory matching the name of the virter image (supplied to `maltest.py`) with the `-i`/`--image` argument)
+    - 🗁 `debian-13/` - A directory matching the name of the virter image (supplied to `maltest.py`) with the `-i`/`--image` argument)
         + 🗁 `init/` - TOML files for the initial steps of provisioning the OS (before setting up and starting Malcolm)
         + 🗁 `fini/` - TOML files for the final stages of provisioning the OS (after shutting down Malcolm)
     - 🗁 `malcolm-init/` - Distribution-agnostic provisioning TOML files for setting up Malcolm prior to starting it

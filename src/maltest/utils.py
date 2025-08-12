@@ -510,7 +510,7 @@ class MalcolmVM(object):
 
         self.provisionEnvArgs = [
             '--set',
-            f"env.VERBOSE={str(debug).lower()}",
+            f"env.VERBOSE={'-vvvv' if debug else ''}",
             '--set',
             f"env.REPO_URL={self.repoUrl}",
             '--set',

@@ -1,7 +1,7 @@
 version = 1
 
 [env]
-VERBOSE = "false"
+VERBOSE = ""
 
 AUTH_METHOD = 'basic'
 # username: maltest
@@ -18,8 +18,7 @@ script = '''
 if [[ -d "$HOME"/Malcolm ]]; then
     echo "Setting up authentication..."
     pushd "$HOME"/Malcolm
-    python3 ./scripts/auth_setup \
-        --verbose "$VERBOSE" \
+    python3 ./scripts/auth_setup $VERBOSE \
         --auth-noninteractive \
         --auth-method "$AUTH_METHOD" \
         --auth-admin-username "$AUTH_USERNAME" \

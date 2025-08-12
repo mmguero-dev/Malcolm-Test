@@ -4,25 +4,6 @@ version = 1
 [steps.shell]
 script = '''
 if ! dpkg -s podman &>/dev/null; then
-  sudo mkdir -p /usr/share/keyrings
-
-  curl -sSL "https://build.opensuse.org/projects/home:alvistack/signing_keys/download?kind=gpg" | \
-      gpg --dearmor | \
-      sudo tee /usr/share/keyrings/home_alvistack.gpg >/dev/null
-
-  sudo tee /etc/apt/sources.list.d/alvistack.list > /dev/null <<'EOT'
-deb [signed-by=/usr/share/keyrings/home_alvistack.gpg] http://mirrorcache-jp.opensuse.org/repositories/home:/alvistack/Debian_12/ /
-EOT
-
-  sudo tee /etc/apt/preferences.d/99-alvistack > /dev/null <<'EOT'
-Package: *
-Pin: origin mirrorcache-jp.opensuse.org
-Pin-Priority: 1
-
-Package: buildah catatonit conmon containernetworking containernetworking-plugins containers-common cri-o-runc crun libcharon-standard-plugins libslirp0 passt podman podman-aardvark-dns podman-netavark python3-podman-compose slirp4netns
-Pin: origin mirrorcache-jp.opensuse.org
-Pin-Priority: 500
-EOT
 
   sudo apt-get -y -q update
   sudo apt-get -y -q --no-install-recommends install \
@@ -32,8 +13,6 @@ EOT
       fuse-overlayfs \
       passt \
       podman \
-      podman-aardvark-dns \
-      podman-netavark \
       slirp4netns \
       uidmap
 

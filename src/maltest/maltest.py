@@ -149,8 +149,8 @@ def main():
         dest='vmImage',
         metavar='<string>',
         type=str,
-        default=os.getenv('VIRTER_IMAGE', 'debian-12'),
-        help='Malcolm virtual instance base image name (e.g., debian-12)',
+        default=os.getenv('VIRTER_IMAGE', 'debian-13'),
+        help='Malcolm virtual instance base image name (e.g., debian-13)',
     )
     vmSpecsArgGroup.add_argument(
         '--image-user',
