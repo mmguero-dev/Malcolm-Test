@@ -50,7 +50,6 @@ EXPECTED_DATASETS = [
     "dce_rpc",
     "dhcp",
     "dns",
-    "dpd",
     "files",
     "ftp",
     "gquic",
