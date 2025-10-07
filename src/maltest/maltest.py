@@ -379,7 +379,7 @@ def main():
         return 1
 
     # the whole thing runs on virter, so if we don't have that what are we even doing here
-    err, _ = mmguero.RunProcess(['virter', 'version'])
+    err, _ = mmguero.run_process(['virter', 'version'])
     if err != 0:
         logging.error(f'{MALTEST_PROJECT_NAME} requires virter, please see https://github.com/LINBIT/virter')
         return 1
@@ -405,7 +405,7 @@ def main():
 
             # get connection information about the VM and set it so the tests can access it as a fixture
             malcolmInfo = malcolmVm.Info()
-            logging.info(json.dumps(malcolmInfo, default=mmguero.JsonObjSerializer))
+            logging.info(json.dumps(malcolmInfo, default=mmguero.json_obj_serializer))
             set_malcolm_vm_info(malcolmInfo)
 
             # malcolm is started; wait for it to be ready to process data, then start testing
@@ -414,7 +414,7 @@ def main():
                 # first, collect the set of test .py files that pytest would execute
                 testSetPreExec = MalcolmTestCollection(logger=logging)
                 pytest.main(
-                    list(mmguero.Flatten(['--collect-only', '-p', 'no:terminal', args.testPath, extraArgs])),
+                    list(mmguero.flatten(['--collect-only', '-p', 'no:terminal', args.testPath, extraArgs])),
                     plugins=[testSetPreExec],
                 )
 
@@ -469,7 +469,7 @@ def main():
 
                 # run the tests
                 if ShuttingDown[0] == False:
-                    exitCode = pytest.main(list(mmguero.Flatten(['-p', 'no:cacheprovider', args.testPath, extraArgs])))
+                    exitCode = pytest.main(list(mmguero.flatten(['-p', 'no:cacheprovider', args.testPath, extraArgs])))
 
             # if we started Malcolm, sleep until instructed
             if args.stayUp:

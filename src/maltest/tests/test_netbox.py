@@ -46,7 +46,7 @@ def test_netbox_cross_segment(
                 "!source.segment.name": None,
                 "!destination.segment.name": None,
                 "tags": "cross_segment",
-                "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
             },
         },
         allow_redirects=True,
@@ -56,12 +56,12 @@ def test_netbox_cross_segment(
     response.raise_for_status()
     responseJson = response.json()
     results = {}
-    for providerBucket in mmguero.DeepGet(responseJson, ["event.provider", "buckets"], []):
+    for providerBucket in mmguero.deep_get(responseJson, ["event.provider", "buckets"], []):
         providerName = providerBucket["key"]
         results[providerName] = []
-        for sourceSegmentBucket in mmguero.DeepGet(providerBucket, ["source.segment.name", "buckets"], [{}]):
+        for sourceSegmentBucket in mmguero.deep_get(providerBucket, ["source.segment.name", "buckets"], [{}]):
             sourceSegmentName = sourceSegmentBucket["key"]
-            for destinationSegmentBucket in mmguero.DeepGet(
+            for destinationSegmentBucket in mmguero.deep_get(
                 sourceSegmentBucket, ["destination.segment.name", "buckets"], [{}]
             ):
                 destinationSegmentName = destinationSegmentBucket["key"]
@@ -105,7 +105,7 @@ def test_netbox_enrichment(
                 "from": "0",
                 "filter": {
                     f"!{field}": None,
-                    "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                    "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
                 },
             },
             allow_redirects=True,
@@ -113,7 +113,7 @@ def test_netbox_enrichment(
             verify=False,
         )
         response.raise_for_status()
-        buckets = {item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), [field, 'buckets'], [])}
+        buckets = {item['key']: item['doc_count'] for item in mmguero.deep_get(response.json(), [field, 'buckets'], [])}
         LOGGER.debug(buckets)
         assert buckets
 

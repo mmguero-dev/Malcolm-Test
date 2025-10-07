@@ -43,7 +43,7 @@ def test_arkime_views(
         verify=False,
     )
     response.raise_for_status()
-    views = [x.get("name") for x in mmguero.DeepGet(response.json(), ["data"], []) if 'name' in x]
+    views = [x.get("name") for x in mmguero.deep_get(response.json(), ["data"], []) if 'name' in x]
     LOGGER.debug(views)
     assert all(x in views for x in EXPECTED_VIEWS)
 
@@ -72,7 +72,7 @@ def test_arkime_sessions(
                 "date": "-1",
                 "order": "firstPacket:desc",
                 "view": viewName,
-                "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
+                "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)])}]",
             },
             allow_redirects=True,
             auth=malcolm_http_auth,
@@ -105,7 +105,7 @@ def test_arkime_connections(
         headers={"Content-Type": "application/json"},
         json={
             "date": "-1",
-            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
+            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)])}]",
         },
         allow_redirects=True,
         auth=malcolm_http_auth,
@@ -142,7 +142,7 @@ def test_arkime_pcap_payload(
             "order": "firstPacket:desc",
             "view": ARKIME_VIEW,
             "length": "10",
-            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}] && databytes >= 10000",
+            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)])}] && databytes >= 10000",
         },
         allow_redirects=True,
         auth=malcolm_http_auth,
@@ -189,7 +189,7 @@ def test_arkime_spiview(
             "stopTime": "1614643200",
             "order": "firstPacket:desc",
             "spi": "source.ip,destination.ip,event.provider,event.dataset",
-            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
+            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)])}]",
         },
         allow_redirects=True,
         auth=malcolm_http_auth,
@@ -225,7 +225,7 @@ def test_arkime_spigraph(
             "stopTime": "1614643200",
             "order": "firstPacket:desc",
             "field": "network.protocol",
-            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
+            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)])}]",
         },
         allow_redirects=True,
         auth=malcolm_http_auth,
@@ -259,7 +259,7 @@ def test_arkime_files(
         verify=False,
     )
     response.raise_for_status()
-    files = mmguero.DeepGet(response.json(), ["data"], [])
+    files = mmguero.deep_get(response.json(), ["data"], [])
     LOGGER.debug(files)
     assert files
 
@@ -364,7 +364,7 @@ def test_arkime_unique(
         json={
             "date": "-1",
             "order": "firstPacket:desc",
-            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])}]",
+            "expression": f"tags == [{','.join([artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)])}]",
             "field": "event.provider",
         },
         allow_redirects=True,

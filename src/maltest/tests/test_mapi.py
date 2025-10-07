@@ -134,6 +134,6 @@ def test_event_log_mapi(
     response.raise_for_status()
     responseData = response.json()
     LOGGER.debug(responseData)
-    assert mmguero.DeepGet(responseData, ['result', '_id'], '')
-    assert mmguero.DeepGet(responseData, ['result', '_index'], '')
-    assert mmguero.DeepGet(responseData, ['result', 'result'], '') in ['created', 'updated']
+    assert mmguero.deep_get(responseData, ['result', '_id'], '')
+    assert mmguero.deep_get(responseData, ['result', '_index'], '')
+    assert mmguero.deep_get(responseData, ['result', 'result'], '') in ['created', 'updated']

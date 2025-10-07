@@ -167,7 +167,7 @@ def test_detection_packages(
         malcolm_url (str): URL for connecting to the Malcolm instance
         artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
     """
-    assert all([artifact_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
+    assert all([artifact_hash_map.get(x, None) for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)])
 
     response = requests.post(
         f"{malcolm_url}/mapi/agg/rule.category",
@@ -178,7 +178,7 @@ def test_detection_packages(
             "filter": {
                 "event.provider": "zeek",
                 "event.dataset": "notice",
-                "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
             },
         },
         allow_redirects=True,
@@ -187,7 +187,7 @@ def test_detection_packages(
     )
     response.raise_for_status()
     buckets = {
-        item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), ['rule.category', 'buckets'], [])
+        item['key']: item['doc_count'] for item in mmguero.deep_get(response.json(), ['rule.category', 'buckets'], [])
     }
     LOGGER.debug(buckets)
     LOGGER.debug([x for x in EXPECTED_CATEGORIES if (buckets.get(x, 0) == 0)])
@@ -226,7 +226,7 @@ def test_hassh_package(
     )
     response.raise_for_status()
     buckets = {
-        item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), ['zeek.ssh.hassh', 'buckets'], [])
+        item['key']: item['doc_count'] for item in mmguero.deep_get(response.json(), ['zeek.ssh.hassh', 'buckets'], [])
     }
     LOGGER.debug(buckets)
     assert buckets
@@ -265,7 +265,7 @@ def test_xor_decrypt_package(
     )
     response.raise_for_status()
     buckets = {
-        item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), ['file.path', 'buckets'], [])
+        item['key']: item['doc_count'] for item in mmguero.deep_get(response.json(), ['file.path', 'buckets'], [])
     }
     LOGGER.debug(buckets)
     assert buckets
@@ -304,7 +304,7 @@ def test_http_sniffpass(
     response.raise_for_status()
     buckets = {
         item['key']: item['doc_count']
-        for item in mmguero.DeepGet(response.json(), ['zeek.http.post_username', 'buckets'], [])
+        for item in mmguero.deep_get(response.json(), ['zeek.http.post_username', 'buckets'], [])
     }
     LOGGER.debug(buckets)
     assert buckets

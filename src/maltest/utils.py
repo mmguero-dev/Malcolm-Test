@@ -300,7 +300,7 @@ class OpenSearchObjs(DatabaseObjs):
             None
         """
         super().__init__()
-        self.OpenSearchImport = mmguero.DoDynamicImport('opensearchpy', 'opensearch-py', interactive=False)
+        self.OpenSearchImport = mmguero.dynamic_import('opensearchpy', 'opensearch-py', interactive=False)
         if self.OpenSearchImport:
             self.DatabaseClass = self.OpenSearchImport.OpenSearch
             self.SearchClass = self.OpenSearchImport.Search
@@ -331,8 +331,8 @@ class ElasticsearchObjs(DatabaseObjs):
             None
         """
         super().__init__()
-        self.ElasticImport = mmguero.DoDynamicImport('elasticsearch', 'elasticsearch', interactive=False)
-        self.ElasticDslImport = mmguero.DoDynamicImport('elasticsearch_dsl', 'elasticsearch-dsl', interactive=False)
+        self.ElasticImport = mmguero.dynamic_import('elasticsearch', 'elasticsearch', interactive=False)
+        self.ElasticDslImport = mmguero.dynamic_import('elasticsearch_dsl', 'elasticsearch-dsl', interactive=False)
         if self.ElasticImport:
             self.DatabaseClass = self.elasticImport.Elasticsearch
         if self.ElasticDslImport:
@@ -427,7 +427,7 @@ class MalcolmTestCollection(object):
                                     testArtifactList.append(ast.literal_eval(node.value))
                                 elif target.id == NETBOX_ENRICH_BOOL_NAME:
                                     testNetBoxEnrich = mmguero.str2bool(str(ast.literal_eval(node.value)))
-                for artifact in list(set(mmguero.Flatten(testArtifactList))):
+                for artifact in list(set(mmguero.flatten(testArtifactList))):
                     if artifact not in result:
                         result[artifact] = defaultdict(lambda: None)
                     if testNetBoxEnrich:
@@ -556,7 +556,7 @@ class MalcolmVM(object):
             ]
         )
         self.malcolmPassword = self.osEnv.get('MALCOLM_AUTH_PASSWORD', 'M@lc0lm')
-        err, out = mmguero.RunProcess(
+        err, out = mmguero.run_process(
             ['openssl', 'passwd', '-quiet', '-stdin', '-1'],
             stdout=True,
             stderr=False,
@@ -572,7 +572,7 @@ class MalcolmVM(object):
                     f"env.AUTH_PASSWORD_OPENSSL={out[0]}",
                 ]
             )
-        err, out = mmguero.RunProcess(
+        err, out = mmguero.run_process(
             ['htpasswd', '-i', '-n', '-B', self.malcolmUsername],
             stdout=True,
             stderr=False,
@@ -606,7 +606,7 @@ class MalcolmVM(object):
         finally:
             # if requested, make sure to shut down the VM
             if self.removeAfterExec and not self.buildMode:
-                tmpExitCode, output = mmguero.RunProcess(
+                tmpExitCode, output = mmguero.run_process(
                     ['virter', 'vm', 'rm', self.name],
                     env=self.osEnv,
                     debug=self.debug,
@@ -624,7 +624,7 @@ class MalcolmVM(object):
         Returns:
             None
         """
-        for x in mmguero.GetIterable(output):
+        for x in mmguero.get_iterable(output):
             if x:
                 self.logger.info(parse_virter_log_line(x)['msg'])
 
@@ -638,7 +638,7 @@ class MalcolmVM(object):
         Returns:
             True if "virter vm exists" succeeds with a 0 error code, False otherwise
         """
-        exitCode, output = mmguero.RunProcess(
+        exitCode, output = mmguero.run_process(
             ['virter', 'vm', 'exists', self.name],
             env=self.osEnv,
             debug=self.debug,
@@ -863,7 +863,7 @@ class MalcolmVM(object):
         """
         result = {}
         # list the VMs so we can figure out the host network name of this one
-        exitCode, output = mmguero.RunProcess(
+        exitCode, output = mmguero.run_process(
             ['virter', 'vm', 'list'],
             env=self.osEnv,
             debug=self.debug,
@@ -883,7 +883,7 @@ class MalcolmVM(object):
             result = vms.get(self.name, {})
             if result and result.get('network', None):
                 # get additional information about this VM's networking
-                exitCode, output = mmguero.RunProcess(
+                exitCode, output = mmguero.run_process(
                     ['virter', 'network', 'list-attached', result['network']],
                     env=self.osEnv,
                     debug=self.debug,
@@ -923,7 +923,7 @@ class MalcolmVM(object):
             if self.dbObjs is None:
                 self.dbObjs = (
                     ElasticsearchObjs(self.malcolmUsername, self.malcolmPassword)
-                    if ('elastic' in mmguero.DeepGet(result, ['version', 'mode'], '').lower())
+                    if ('elastic' in mmguero.deep_get(result, ['version', 'mode'], '').lower())
                     else OpenSearchObjs(self.malcolmUsername, self.malcolmPassword)
                 )
         except Exception as e:
@@ -1018,9 +1018,9 @@ class MalcolmVM(object):
                 '--wait-ssh',
             ]
 
-            cmd = [str(x) for x in list(mmguero.Flatten(cmd))]
+            cmd = [str(x) for x in list(mmguero.flatten(cmd))]
             self.logger.info(cmd)
-            exitCode, output = mmguero.RunProcess(
+            exitCode, output = mmguero.run_process(
                 cmd,
                 env=self.osEnv,
                 debug=self.debug,
@@ -1108,9 +1108,9 @@ class MalcolmVM(object):
             else:
                 if self.provisionEnvArgs:
                     cmd.extend(self.provisionEnvArgs)
-                cmd = [str(x) for x in list(mmguero.Flatten(cmd))]
+                cmd = [str(x) for x in list(mmguero.flatten(cmd))]
                 self.logger.info(cmd)
-                code, out = mmguero.RunProcess(
+                code, out = mmguero.run_process(
                     cmd,
                     env=self.osEnv,
                     debug=self.debug,
@@ -1165,7 +1165,7 @@ class MalcolmVM(object):
         Returns:
             exit code from ProvisionFile
         """
-        with mmguero.TemporaryFilename(suffix='.toml') as tomlFileName:
+        with mmguero.temporary_filename(suffix='.toml') as tomlFileName:
             with open(tomlFileName, 'w') as tomlFile:
                 tomlFile.write(tomli_w.dumps(data))
             return self.ProvisionFile(
@@ -1368,7 +1368,7 @@ class MalcolmVM(object):
             if not self.vmBuildKeepLayers and self.buildNamePre:
                 for layer in self.buildNamePre:
                     if layer not in [self.vmBuildName, self.vmImage]:
-                        tmpCode, tmpOut = mmguero.RunProcess(
+                        tmpCode, tmpOut = mmguero.run_process(
                             ['virter', 'image', 'rm', layer],
                             env=self.osEnv,
                             debug=self.debug,

@@ -69,7 +69,7 @@ def test_severity_tags(
         malcolm_url (str): URL for connecting to the Malcolm instance
         artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
     """
-    assert all([artifact_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
+    assert all([artifact_hash_map.get(x, None) for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)])
 
     response = requests.post(
         f"{malcolm_url}/mapi/agg/event.severity_tags",
@@ -78,7 +78,7 @@ def test_severity_tags(
             "from": "0",
             "filter": {
                 # can't filter on tags, because signatures(_carved).log doesn't get tags :(
-                # "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                # "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
                 "!event.severity_tags": None,
             },
         },
@@ -89,7 +89,7 @@ def test_severity_tags(
     response.raise_for_status()
     buckets = {
         item['key']: item['doc_count']
-        for item in mmguero.DeepGet(response.json(), ['event.severity_tags', 'buckets'], [])
+        for item in mmguero.deep_get(response.json(), ['event.severity_tags', 'buckets'], [])
     }
     LOGGER.debug(buckets)
     LOGGER.debug([x for x in EXPECTED_SEVERITY_TAGS if (buckets.get(x, 0) == 0)])

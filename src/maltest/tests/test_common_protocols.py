@@ -114,7 +114,7 @@ def test_common_protocols_zeek(
         malcolm_url (str): URL for connecting to the Malcolm instance
         artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
     """
-    assert all([artifact_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
+    assert all([artifact_hash_map.get(x, None) for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)])
 
     response = requests.post(
         f"{malcolm_url}/mapi/agg/event.dataset",
@@ -123,7 +123,7 @@ def test_common_protocols_zeek(
             "from": "0",
             "filter": {
                 "event.provider": "zeek",
-                "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
             },
         },
         allow_redirects=True,
@@ -132,7 +132,7 @@ def test_common_protocols_zeek(
     )
     response.raise_for_status()
     buckets = {
-        item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), ['event.dataset', 'buckets'], [])
+        item['key']: item['doc_count'] for item in mmguero.deep_get(response.json(), ['event.dataset', 'buckets'], [])
     }
     LOGGER.debug(buckets)
     LOGGER.debug([x for x in EXPECTED_DATASETS if (buckets.get(x, 0) == 0)])
@@ -163,7 +163,7 @@ def test_mapi_document_lookup(
             "limit": "2",
             "filter": {
                 "event.provider": "zeek",
-                "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
             },
         },
         allow_redirects=True,
@@ -228,7 +228,7 @@ def test_extracted_files_download(
         ),
     ):
         bytesSize = 0
-        with mmguero.TemporaryFilename(suffix='.exe') as exeFileName:
+        with mmguero.temporary_filename(suffix='.exe') as exeFileName:
             with open(exeFileName, 'wb') as exeFile:
                 for chunk in unzippedChunks:
                     bytesSize = bytesSize + len(chunk)
@@ -266,7 +266,7 @@ def test_iana_lookups(
                 "from": "0",
                 "filter": {
                     f"!{field}": None,
-                    "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                    "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
                 },
             },
             allow_redirects=True,
@@ -274,7 +274,7 @@ def test_iana_lookups(
             verify=False,
         )
         response.raise_for_status()
-        buckets = {item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), [field, 'buckets'], [])}
+        buckets = {item['key']: item['doc_count'] for item in mmguero.deep_get(response.json(), [field, 'buckets'], [])}
         LOGGER.debug(buckets)
         assert buckets
 
@@ -307,7 +307,7 @@ def test_freq(
                 "event.dataset": "dns",
                 "!event.freq_score_v1": None,
                 "!event.freq_score_v2": None,
-                "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
             },
         },
         allow_redirects=True,
@@ -352,7 +352,7 @@ def test_geo_asn(
                     "filter": {
                         "event.provider": provider,
                         f"!{field}": None,
-                        "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                        "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
                     },
                 },
                 allow_redirects=True,
@@ -400,7 +400,7 @@ def test_conn_info(
                     "filter": {
                         "event.provider": provider,
                         f"!{field}": None,
-                        "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                        "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
                     },
                 },
                 allow_redirects=True,

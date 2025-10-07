@@ -28,7 +28,7 @@ def test_all_evtx(
         malcolm_url (str): URL for connecting to the Malcolm instance
         artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
     """
-    assert all([artifact_hash_map.get(x, None) for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)])
+    assert all([artifact_hash_map.get(x, None) for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)])
 
     response = requests.post(
         f"{malcolm_url}/mapi/agg/event.dataset",
@@ -39,7 +39,7 @@ def test_all_evtx(
             "filter": {
                 "event.module": "winlog",
                 "!event.dataset": None,
-                "tags": [artifact_hash_map[x] for x in mmguero.GetIterable(UPLOAD_ARTIFACTS)],
+                "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
             },
         },
         allow_redirects=True,
@@ -48,7 +48,7 @@ def test_all_evtx(
     )
     response.raise_for_status()
     buckets = {
-        item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), ['event.dataset', 'buckets'], [])
+        item['key']: item['doc_count'] for item in mmguero.deep_get(response.json(), ['event.dataset', 'buckets'], [])
     }
     LOGGER.debug(buckets)
     assert buckets

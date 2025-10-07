@@ -47,6 +47,6 @@ def test_nginx_logs(
         )
         response.raise_for_status()
         LOGGER.debug(response.json())
-        buckets = {item['key']: item['doc_count'] for item in mmguero.DeepGet(response.json(), [field, 'buckets'], [])}
+        buckets = {item['key']: item['doc_count'] for item in mmguero.deep_get(response.json(), [field, 'buckets'], [])}
         LOGGER.debug(buckets)
         assert buckets
