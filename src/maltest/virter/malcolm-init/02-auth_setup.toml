@@ -1,7 +1,7 @@
 version = 1
 
 [env]
-AUTH_VERBOSE = ""
+VERBOSE = ""
 
 AUTH_METHOD = 'basic'
 # username: maltest
@@ -15,10 +15,12 @@ AUTH_PASSWORD_HTPASSWD = '$2y$05$PMhfXVcC.8ztE5yx/IJV9ud59XcwZI7/1Z3mW2QRvs5DMz6
 [[steps]]
 [steps.shell]
 script = '''
+( [[ -n "${VERBOSE}" ]] && [[ "${VERBOSE}" != "false" ]] && [[ "${VERBOSE}" != "0" ]] ) && DEBUG='-vvvv' || DEBUG=
+
 if [[ -d "$HOME"/Malcolm ]]; then
     echo "Setting up authentication..."
     pushd "$HOME"/Malcolm
-    python3 ./scripts/auth_setup $AUTH_VERBOSE \
+    python3 ./scripts/auth_setup $DEBUG \
         --auth-noninteractive \
         --auth-method "$AUTH_METHOD" \
         --auth-admin-username "$AUTH_USERNAME" \

@@ -74,11 +74,12 @@ EXTRACTED_FILE_CAPA = "true"
 VIRUSTOTAL_API_KEY = ""
 FILE_SCAN_RULE_UPDATE = "false"
 NETBOX = "local"
+NETBOX_URL = ""
 NETBOX_ENRICH = "true"
 NETBOX_AUTOPOPULATE = "true"
 NETBOX_AUTO_PREFIXES = "true"
 NETBOX_SITE_NAME = ""
-LIVE_CAPTURE_IFACE = ""
+LIVE_CAPTURE_IFACE = "primary"
 LIVE_CAPTURE_FILTER = ""
 LIVE_CAPTURE_IFACE_TWEAK = "false"
 LIVE_CAPTURE_ARKIME = "false"
@@ -127,92 +128,116 @@ EXTRA_ARRAY+=( "netbox-common.env:NETBOX_AUTO_POPULATE_SUBNETS=10.0.0.0/8,!10.10
 
 pushd Malcolm
 SETTINGS_FILE="$(mktemp --suffix=.json)"
-python3 ./scripts/install.py --verbose "${VERBOSE}" --configure --defaults --non-interactive --export-malcolm-config-file "${SETTINGS_FILE}"
-jq ".configuration.runtimeBin = \"${RUNTIME}\"
-    | .configuration.arkimeFreeSpaceG = \"${DELETE_PCAP_THRESHOLD}\"
-    | .configuration.arkimeManagePCAP = ${DELETE_OLD_PCAP}
-    | .configuration.autoArkime = ${AUTO_ARKIME}
-    | .configuration.autoFreq = ${AUTO_FREQ}
-    | .configuration.autoOui = ${AUTO_OUI}
-    | .configuration.autoSuricata = ${AUTO_SURICATA}
-    | .configuration.autoZeek = ${AUTO_ZEEK}
-    | .configuration.capaScan = ${EXTRACTED_FILE_CAPA}
-    | .configuration.clamAvScan = ${EXTRACTED_FILE_CLAMAV}
-    | .configuration.containerNetworkName = \"${NETWORK_NAME}\"
-    | .configuration.dashboardsDarkMode = ${DARK_MODE}
-    | .configuration.dashboardsUrl = \"${DASHBOARDS_URL}\"
-    | .configuration.exposeFilebeatTcp = ${FILEBEAT_TCP_EXPOSE}
-    | .configuration.exposeLogstash = ${LOGSTASH_EXPOSE}
-    | .configuration.exposeOpenSearch = ${OPENSEARCH_EXPOSE}
-    | .configuration.exposeSFTP = ${SFTP_EXPOSE}
-    | .configuration.extractedFileMaxPercentThreshold = ${EXTRACTED_FILE_TOTAL_DISK_USAGE_PERCENT_THRESHOLD}
-    | .configuration.extractedFileMaxSizeThreshold = \"${EXTRACTED_FILE_MAX_SIZE_THRESHOLD}\"
-    | .configuration.fileCarveEnabled = true
-    | .configuration.fileCarveHttpServeEncryptKey = \"${EXTRACTED_FILE_SERVER_PASSWORD}\"
-    | .configuration.fileCarveHttpServer = ${EXTRACTED_FILE_SERVER}
-    | .configuration.fileCarveHttpServerZip = ${EXTRACTED_FILE_SERVER_ZIP}
-    | .configuration.fileCarveMode = \"${FILE_EXTRACTION}\"
-    | .configuration.filePreserveMode = \"${FILE_PRESERVATION}\"
-    | .configuration.fileScanRuleUpdate = ${FILE_SCAN_RULE_UPDATE}
-    | .configuration.indexDir = \"${OPENSEARCH_PATH}\"
-    | .configuration.indexManagementHistoryInWeeks = ${INDEX_MANAGEMENT_WEEKS_OF_HISTORY}
-    | .configuration.indexManagementHotWarm = ${INDEX_MANAGEMENT_HOT_WARM_ENABLE}
-    | .configuration.indexManagementOptimizationTimePeriod = \"${INDEX_MANAGEMENT_OPTIMIZATION_TIME_PERIOD}\"
-    | .configuration.indexManagementOptimizeSessionSegments = ${INDEX_MANAGEMENT_SEGMENTS}
-    | .configuration.indexManagementPolicy = ${INDEX_MANAGEMENT_ENABLE}
-    | .configuration.indexManagementReplicas = ${INDEX_MANAGEMENT_REPLICAS}
-    | .configuration.indexManagementSpiDataRetention = \"${INDEX_MANAGEMENT_SPI_DATA_RETENTION}\"
-    | .configuration.indexPruneThreshold = \"${DELETE_INDEX_THRESHOLD}\"
-    | .configuration.indexSnapshotDir = \"${OPENSEARCH_SNAPSHOT_PATH}\"
-    | .configuration.liveArkime = ${LIVE_CAPTURE_ARKIME}
-    | .configuration.liveArkimeNodeHost = \"${LIVE_CAPTURE_ARKIME_NODE_HOST}\"
-    | .configuration.liveSuricata = ${LIVE_CAPTURE_SURICATA}
-    | .configuration.liveZeek = ${LIVE_CAPTURE_ZEEK}
-    | .configuration.logstashHost = \"${LOGSTASH_HOST}\"
-    | .configuration.lsMemory = \"${LOGSTASH_MEMORY}\"
-    | .configuration.lsWorkers = ${LOGSTASH_WORKERS}
-    | .configuration.malcolmIcs = ${ZEEK_ICS}
-    | .configuration.malcolmProfile = \"${MALCOLM_PROFILE}\"
-    | .configuration.malcolmRestartPolicy = \"${RESTART_MALCOLM}\"
-    | .configuration.netboxAutoPopulate = ${NETBOX_AUTOPOPULATE}
-    | .configuration.netboxLogstashAutoSubnets = ${NETBOX_AUTO_PREFIXES}
-    | .configuration.netboxLogstashEnrich = ${NETBOX_ENRICH}
-    | .configuration.netboxMode = \"${NETBOX}\"
-    | .configuration.netboxSiteName = \"${NETBOX_SITE_NAME}\"
-    | .configuration.nginxResolverIpv4 = ${NGINX_RESOLVER_IPV4}
-    | .configuration.nginxResolverIpv6 = ${NGINX_RESOLVER_IPV6}
-    | .configuration.nginxSSL = ${HTTPS}
-    | .configuration.opensearchPrimaryMode = \"${OPENSEARCH}\"
-    | .configuration.opensearchPrimarySslVerify = ${OPENSEARCH_SSL_VERIFY}
-    | .configuration.opensearchPrimaryUrl = \"${OPENSEARCH_URL}\"
-    | .configuration.opensearchSecondaryMode = \"${OPENSEARCH_SECONDARY}\"
-    | .configuration.opensearchSecondarySslVerify = ${OPENSEARCH_SECONDARY_SSL_VERIFY}
-    | .configuration.opensearchSecondaryUrl = \"${OPENSEARCH_SECONDARY_URL}\"
-    | .configuration.osMemory = \"${OPENSEARCH_MEMORY}\"
-    | .configuration.pcapDir = \"${PCAP_PATH}\"
-    | .configuration.pcapFilter = \"${LIVE_CAPTURE_FILTER}\"
-    | .configuration.pcapIface = \"${LIVE_CAPTURE_IFACE}\"
-    | .configuration.pcapNetSniff = ${LIVE_CAPTURE_NETSNIFF}
-    | .configuration.pcapNodeName = \"${NODE_NAME}\"
-    | .configuration.pcapTcpDump = ${LIVE_CAPTURE_TCPDUMP}
-    | .configuration.reverseDns = ${REVERSE_DNS}
-    | .configuration.suricataLogDir = \"${SURICATA_PATH}\"
-    | .configuration.suricataRuleUpdate = ${SURICATA_RULE_UPDATE}
-    | .configuration.syslogTcpPort = ${SYSLOG_PORT_TCP}
-    | .configuration.syslogUdpPort = ${SYSLOG_PORT_UDP}
-    | .configuration.traefikEntrypoint = \"${TRAEFIK_ENTRYPOINT}\"
-    | .configuration.traefikHost = \"${TRAEFIK_HOST}\"
-    | .configuration.traefikLabels = ${REVERSE_PROXIED}
-    | .configuration.traefikOpenSearchHost = \"${TRAEFIK_HOST_OPENSEARCH}\"
-    | .configuration.traefikResolver = \"${TRAEFIK_RESOLVER}\"
-    | .configuration.tweakIface = ${LIVE_CAPTURE_IFACE_TWEAK}
-    | .configuration.vtotApiKey = \"${VIRUSTOTAL_API_KEY}\"
-    | .configuration.yaraScan = ${EXTRACTED_FILE_YARA}
-    | .configuration.zeekICSBestGuess = ${ZEEK_ICS_BEST_GUESS}
-    | .configuration.zeekLogDir = \"${ZEEK_PATH}\"" \
-    "${SETTINGS_FILE}" | sponge "${SETTINGS_FILE}"
-python3 ./scripts/install.py --configure --verbose "${VERBOSE}" --configure --non-interactive --import-malcolm-config-file "${SETTINGS_FILE}" --extra "${EXTRA_ARRAY[@]}"
-rm -f "${SETTINGS_FILE}"
+JQ_FILE="$(mktemp --suffix=.jq)"
+
+python3 ./scripts/install.py --verbose "${DEBUG}" --configure --defaults --non-interactive --export-malcolm-config-file "${SETTINGS_FILE}"
+
+( [[ -n "${VERBOSE}" ]] && [[ "${VERBOSE}" != "false" ]] && [[ "${VERBOSE}" != "0" ]] ) && DEBUG=true || DEBUG=false
+( [[ "${RUNTIME}" == "docker" ]] || [[ "${MALCOLM_CONTAINER_RUNTIME}" == "podman" ]] ) && ORCH_MODE=DOCKER_COMPOSE || ORCH_MODE=KUBERNETES
+( [[ -z "${OPENSEARCH_PATH}" ]] || [[ -z "${OPENSEARCH_SNAPSHOT_PATH}" ]] || [[ -z "${PCAP_PATH}" ]] || [[ -z "${SURICATA_PATH}" ]] || [[ -z "${ZEEK_PATH}" ]] ) && \
+  DEFAULT_PATHS=true || DEFAULT_PATHS=false
+( [[ "${LIVE_CAPTURE_ARKIME}" == "true" ]] || [[ "${LIVE_CAPTURE_ZEEK}" == "true" ]] || [[ "${LIVE_CAPTURE_SURICATA}" == "true" ]] || [[ "${LIVE_CAPTURE_TCPDUMP}" == "true" ]] || [[ "${LIVE_CAPTURE_NETSNIFF}" == "true" ]] ) && \
+  CAPTURE_LIVE=true || CAPTURE_LIVE=false
+if [[ "${LIVE_CAPTURE_IFACE}" == "primary" ]]; then
+    command -v ip >/dev/null 2>&1 && CAPTURE_IFACE=$(ip route get 255.255.255.255 2>/dev/null | awk '/dev/ {print $4}') || CAPTURE_IFACE='lo'
+else
+    CAPTURE_IFACE="${LIVE_CAPTURE_IFACE}"
+fi
+
+tee "${JQ_FILE}" >/dev/null <<EOF
+.configuration.runtimeBin = "${RUNTIME}"
+| .configuration.arkimeFreeSpaceG = "${DELETE_PCAP_THRESHOLD}"
+| .configuration.arkimeManagePCAP = ${DELETE_OLD_PCAP}
+| .configuration.autoArkime = ${AUTO_ARKIME}
+| .configuration.autoFreq = ${AUTO_FREQ}
+| .configuration.autoOui = ${AUTO_OUI}
+| .configuration.autoSuricata = ${AUTO_SURICATA}
+| .configuration.autoZeek = ${AUTO_ZEEK}
+| .configuration.capaScan = ${EXTRACTED_FILE_CAPA}
+| .configuration.captureLiveNetworkTraffic = ${CAPTURE_LIVE}
+| .configuration.clamAvScan = ${EXTRACTED_FILE_CLAMAV}
+| .configuration.containerNetworkName = "${NETWORK_NAME}"
+| .configuration.dashboardsDarkMode = ${DARK_MODE}
+| .configuration.dashboardsUrl = "${DASHBOARDS_URL}"
+| .configuration.dockerOrchestrationMode = "${ORCH_MODE}"
+| .configuration.exposeFilebeatTcp = ${FILEBEAT_TCP_EXPOSE}
+| .configuration.exposeLogstash = ${LOGSTASH_EXPOSE}
+| .configuration.exposeOpenSearch = ${OPENSEARCH_EXPOSE}
+| .configuration.exposeSFTP = ${SFTP_EXPOSE}
+| .configuration.extractedFileMaxPercentThreshold = ${EXTRACTED_FILE_TOTAL_DISK_USAGE_PERCENT_THRESHOLD}
+| .configuration.extractedFileMaxSizeThreshold = "${EXTRACTED_FILE_MAX_SIZE_THRESHOLD}"
+| .configuration.filebeatTcpDefaults = ${FILEBEAT_TCP_EXPOSE}
+| .configuration.fileCarveEnabled = true
+| .configuration.fileCarveHttpServeEncryptKey = "${EXTRACTED_FILE_SERVER_PASSWORD}"
+| .configuration.fileCarveHttpServer = ${EXTRACTED_FILE_SERVER}
+| .configuration.fileCarveHttpServerZip = ${EXTRACTED_FILE_SERVER_ZIP}
+| .configuration.fileCarveMode = "${FILE_EXTRACTION}"
+| .configuration.filePreserveMode = "${FILE_PRESERVATION}"
+| .configuration.fileScanRuleUpdate = ${FILE_SCAN_RULE_UPDATE}
+| .configuration.indexDir = "${OPENSEARCH_PATH}"
+| .configuration.indexManagementHistoryInWeeks = ${INDEX_MANAGEMENT_WEEKS_OF_HISTORY}
+| .configuration.indexManagementHotWarm = ${INDEX_MANAGEMENT_HOT_WARM_ENABLE}
+| .configuration.indexManagementOptimizationTimePeriod = "${INDEX_MANAGEMENT_OPTIMIZATION_TIME_PERIOD}"
+| .configuration.indexManagementOptimizeSessionSegments = ${INDEX_MANAGEMENT_SEGMENTS}
+| .configuration.indexManagementPolicy = ${INDEX_MANAGEMENT_ENABLE}
+| .configuration.indexManagementReplicas = ${INDEX_MANAGEMENT_REPLICAS}
+| .configuration.indexManagementSpiDataRetention = "${INDEX_MANAGEMENT_SPI_DATA_RETENTION}"
+| .configuration.indexPruneThreshold = "${DELETE_INDEX_THRESHOLD}"
+| .configuration.indexSnapshotDir = "${OPENSEARCH_SNAPSHOT_PATH}"
+| .configuration.liveArkime = ${LIVE_CAPTURE_ARKIME}
+| .configuration.liveArkimeNodeHost = "${LIVE_CAPTURE_ARKIME_NODE_HOST}"
+| .configuration.liveSuricata = ${LIVE_CAPTURE_SURICATA}
+| .configuration.liveZeek = ${LIVE_CAPTURE_ZEEK}
+| .configuration.logstashHost = "${LOGSTASH_HOST:-logstash:5044}"
+| .configuration.lsMemory = "${LOGSTASH_MEMORY}"
+| .configuration.lsWorkers = ${LOGSTASH_WORKERS}
+| .configuration.malcolmIcs = ${ZEEK_ICS}
+| .configuration.malcolmProfile = "${MALCOLM_PROFILE}"
+| .configuration.malcolmRestartPolicy = "${RESTART_MALCOLM}"
+| .configuration.netboxAutoPopulate = ${NETBOX_AUTOPOPULATE}
+| .configuration.netboxLogstashAutoSubnets = ${NETBOX_AUTO_PREFIXES}
+| .configuration.netboxLogstashEnrich = ${NETBOX_ENRICH}
+| .configuration.netboxMode = "${NETBOX}"
+| .configuration.netboxSiteName = "${NETBOX_SITE_NAME}"
+| .configuration.netboxUrl = "${NETBOX_URL}"
+| .configuration.nginxResolverIpv4 = ${NGINX_RESOLVER_IPV4}
+| .configuration.nginxResolverIpv6 = ${NGINX_RESOLVER_IPV6}
+| .configuration.nginxSSL = ${HTTPS}
+| .configuration.opensearchPrimaryMode = "${OPENSEARCH}"
+| .configuration.opensearchPrimarySslVerify = ${OPENSEARCH_SSL_VERIFY}
+| .configuration.opensearchPrimaryUrl = "${OPENSEARCH_URL}"
+| .configuration.opensearchSecondaryMode = "${OPENSEARCH_SECONDARY}"
+| .configuration.opensearchSecondarySslVerify = ${OPENSEARCH_SECONDARY_SSL_VERIFY}
+| .configuration.opensearchSecondaryUrl = "${OPENSEARCH_SECONDARY_URL}"
+| .configuration.osMemory = "${OPENSEARCH_MEMORY}"
+| .configuration.pcapDir = "${PCAP_PATH}"
+| .configuration.pcapFilter = "${LIVE_CAPTURE_FILTER}"
+| .configuration.pcapIface = "${CAPTURE_IFACE}"
+| .configuration.pcapNetSniff = ${LIVE_CAPTURE_NETSNIFF}
+| .configuration.pcapNodeName = "${NODE_NAME}"
+| .configuration.pcapTcpDump = ${LIVE_CAPTURE_TCPDUMP}
+| .configuration.reverseDns = ${REVERSE_DNS}
+| .configuration.suricataLogDir = "${SURICATA_PATH}"
+| .configuration.suricataRuleUpdate = ${SURICATA_RULE_UPDATE}
+| .configuration.syslogTcpPort = ${SYSLOG_PORT_TCP}
+| .configuration.syslogUdpPort = ${SYSLOG_PORT_UDP}
+| .configuration.traefikEntrypoint = "${TRAEFIK_ENTRYPOINT}"
+| .configuration.traefikHost = "${TRAEFIK_HOST}"
+| .configuration.traefikLabels = ${REVERSE_PROXIED}
+| .configuration.traefikOpenSearchHost = "${TRAEFIK_HOST_OPENSEARCH}"
+| .configuration.traefikResolver = "${TRAEFIK_RESOLVER}"
+| .configuration.tweakIface = ${LIVE_CAPTURE_IFACE_TWEAK}
+| .configuration.useDefaultStorageLocations = ${DEFAULT_PATHS}
+| .configuration.vtotApiKey = "${VIRUSTOTAL_API_KEY}"
+| .configuration.yaraScan = ${EXTRACTED_FILE_YARA}
+| .configuration.zeekICSBestGuess = ${ZEEK_ICS_BEST_GUESS}
+| .configuration.zeekLogDir = "${ZEEK_PATH}"
+EOF
+
+jq -f "${JQ_FILE}" "${SETTINGS_FILE}" | sponge "${SETTINGS_FILE}"
+
+python3 ./scripts/install.py --configure --verbose "${DEBUG}" --configure --non-interactive --import-malcolm-config-file "${SETTINGS_FILE}" --extra "${EXTRA_ARRAY[@]}"
+rm -f "${SETTINGS_FILE}" "${JQ_FILE}"
 
 if command -v direnv &>/dev/null; then
     eval "$(direnv hook bash)"

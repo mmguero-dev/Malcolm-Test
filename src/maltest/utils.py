@@ -512,8 +512,6 @@ class MalcolmVM(object):
             '--set',
             f"env.VERBOSE={'true' if debug else ''}",
             '--set',
-            f"env.AUTH_VERBOSE={'-vvvv' if debug else ''}",
-            '--set',
             f"env.REPO_URL={self.repoUrl}",
             '--set',
             f"env.REPO_BRANCH={self.repoBranch}",
