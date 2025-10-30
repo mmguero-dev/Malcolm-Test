@@ -78,6 +78,7 @@ NETBOX_URL = ""
 NETBOX_ENRICH = "true"
 NETBOX_AUTOPOPULATE = "true"
 NETBOX_AUTO_PREFIXES = "true"
+NETBOX_AUTO_POPULATE_SUBNETS = "10.0.0.0/8,!10.100.0.0/16"
 NETBOX_SITE_NAME = ""
 LIVE_CAPTURE_IFACE = "primary"
 LIVE_CAPTURE_FILTER = ""
@@ -124,7 +125,6 @@ if [[ -n "$EXTRA" ]]; then
   readarray -td '' EXTRA_ARRAY < <(awk '{ gsub(/\|/,"\0"); print; }' <<<"$EXTRA|"); unset 'EXTRA_ARRAY[-1]';
 fi
 EXTRA_ARRAY+=( "nginx.env:NGINX_LOG_ACCESS_AND_ERRORS=true" )
-EXTRA_ARRAY+=( "netbox-common.env:NETBOX_AUTO_POPULATE_SUBNETS=10.0.0.0/8,!10.100.0.0/16" )
 
 pushd Malcolm
 SETTINGS_FILE="$(mktemp --suffix=.json)"
@@ -195,7 +195,8 @@ tee "${JQ_FILE}" >/dev/null <<EOF
 | .configuration.malcolmProfile = "${MALCOLM_PROFILE}"
 | .configuration.malcolmRestartPolicy = "${RESTART_MALCOLM}"
 | .configuration.netboxAutoPopulate = ${NETBOX_AUTOPOPULATE}
-| .configuration.netboxLogstashAutoSubnets = ${NETBOX_AUTO_PREFIXES}
+| .configuration.netboxLogstashAutoCreatePrefix = ${NETBOX_AUTO_PREFIXES}
+| .configuration.netboxAutoPopulateSubnetFilter = "${NETBOX_AUTO_POPULATE_SUBNETS}"
 | .configuration.netboxLogstashEnrich = ${NETBOX_ENRICH}
 | .configuration.netboxMode = "${NETBOX}"
 | .configuration.netboxSiteName = "${NETBOX_SITE_NAME:-Malcolm}"
