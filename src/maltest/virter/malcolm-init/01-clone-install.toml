@@ -133,7 +133,7 @@ JQ_FILE="$(mktemp --suffix=.jq)"
 python3 ./scripts/install.py --verbose "${DEBUG}" --configure --defaults --non-interactive --export-malcolm-config-file "${SETTINGS_FILE}"
 
 ( [[ -n "${VERBOSE}" ]] && [[ "${VERBOSE}" != "false" ]] && [[ "${VERBOSE}" != "0" ]] ) && DEBUG=true || DEBUG=false
-( [[ "${RUNTIME}" == "docker" ]] || [[ "${MALCOLM_CONTAINER_RUNTIME}" == "podman" ]] ) && ORCH_MODE=DOCKER_COMPOSE || ORCH_MODE=KUBERNETES
+[[ "${RUNTIME}" == "kubernetes" ]] && ORCH_MODE=KUBERNETES || ORCH_MODE=DOCKER_COMPOSE
 ( [[ -z "${OPENSEARCH_PATH}" ]] || [[ -z "${OPENSEARCH_SNAPSHOT_PATH}" ]] || [[ -z "${PCAP_PATH}" ]] || [[ -z "${SURICATA_PATH}" ]] || [[ -z "${ZEEK_PATH}" ]] ) && \
   DEFAULT_PATHS=true || DEFAULT_PATHS=false
 ( [[ "${LIVE_CAPTURE_ARKIME}" == "true" ]] || [[ "${LIVE_CAPTURE_ZEEK}" == "true" ]] || [[ "${LIVE_CAPTURE_SURICATA}" == "true" ]] || [[ "${LIVE_CAPTURE_TCPDUMP}" == "true" ]] || [[ "${LIVE_CAPTURE_NETSNIFF}" == "true" ]] ) && \
