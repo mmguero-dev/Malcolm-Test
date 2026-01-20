@@ -47,7 +47,6 @@ sudo apt-get -y -q --no-install-recommends install \
     unzip \
     vim-tiny \
     xz-utils \
-    yq \
     zip \
     zlib1g
 sudo ln -s -r -f /usr/bin/batcat /usr/bin/bat
@@ -57,4 +56,9 @@ curl -sSL "https://github.com/eza-community/eza/releases/latest/download/eza_$(u
 sudo cp /tmp/eza /usr/bin/eza
 rm -f /tmp/eza
 sudo chmod 755 /usr/bin/eza
+
+curl -fsSL -o /tmp/yq "https://github.com/mikefarah/yq/releases/latest/download/yq_linux_$(uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')"
+sudo cp /tmp/yq /usr/bin/yq
+rm -f /tmp/yq
+sudo chmod 755 /usr/bin/yq
 '''

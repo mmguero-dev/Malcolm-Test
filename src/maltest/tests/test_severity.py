@@ -77,7 +77,7 @@ def test_severity_tags(
         json={
             "from": "0",
             "filter": {
-                # can't filter on tags, because signatures(_carved).log doesn't get tags :(
+                # can't filter on tags, because filescan.log doesn't get tags :(
                 # "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
                 "!event.severity_tags": None,
             },

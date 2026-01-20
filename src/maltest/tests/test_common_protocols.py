@@ -190,7 +190,7 @@ def test_extracted_files_download(
 ):
     """test_extracted_files_download
 
-    List the quarantined .exe files from the /extracted-files/quarantine page, then download one of them.
+    List the .exe files from the /extracted-files page, then download one of them.
         With the assumption that the downloaded .exe file is zipped (the test suite's default) and
         encrypted with a password of "infected" (the test suite's default), it attempts to decrypt
         and unzip the file.
@@ -200,7 +200,7 @@ def test_extracted_files_download(
         malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
     """
     response = requests.get(
-        f"{malcolm_url}/extracted-files/quarantine",
+        f"{malcolm_url}/extracted-files/",
         allow_redirects=True,
         auth=malcolm_http_auth,
         verify=False,
@@ -212,7 +212,7 @@ def test_extracted_files_download(
     LOGGER.debug(urls)
     assert urls
     response = requests.get(
-        f"{malcolm_url}/extracted-files/quarantine/{random.choice(urls)}",
+        f"{malcolm_url}/extracted-files/{random.choice(urls)}",
         allow_redirects=True,
         auth=malcolm_http_auth,
         verify=False,
