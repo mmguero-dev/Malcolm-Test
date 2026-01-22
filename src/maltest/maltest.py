@@ -439,6 +439,7 @@ def main():
                             ) or re.search(r'pcap-?ng', fileType, re.IGNORECASE)
                             hasNonPcapArtifacts = not fileIsPcap
                             artifactNewName = artifactHash + artifactFileParts[1]
+                            logging.debug(f"{artifactFilespec=}, {fileMime=}, {fileType=}, {artifactHash=}")
                             if ShuttingDown[0] == False:
                                 if args.noUpload or (
                                     # TODO: is there a way we can detect duplicate non-PCAP (evtx, etc.) files?
@@ -449,14 +450,21 @@ def main():
                                     set_artifact_hash(artifactFile, artifactHash)
                                 else:
                                     # copy the file to Malcolm for processing
+                                    artifactDestName = (
+                                        f"/home/{args.vmImageUsername}/Malcolm/pcap/upload/{'' if (artifactAttrs['netbox'] == True) else 'NBSITEID0,'}{artifactNewName}",
+                                    )
                                     copyCode = malcolmVm.CopyFile(
                                         artifactFilespec,
                                         # TODO: Assuming the Malcolm directory like this might not be very robust
-                                        f"/home/{args.vmImageUsername}/Malcolm/pcap/upload/{'' if (artifactAttrs['netbox'] == True) else 'NBSITEID0,'}{artifactNewName}",
+                                        artifactDestName,
                                         tolerateFailure=True,
                                     )
                                     if copyCode == 0:
                                         set_artifact_hash(artifactFile, artifactHash)
+                                    else:
+                                        logging.error(
+                                            f"Error {copyCode} copying {artifactFilespec} => {artifactDestName}"
+                                        )
                         else:
                             logging.error(f'Failed to calculate hash for {artifactFilespec}')
 
