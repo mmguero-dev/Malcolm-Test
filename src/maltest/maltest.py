@@ -450,9 +450,7 @@ def main():
                                     set_artifact_hash(artifactFile, artifactHash)
                                 else:
                                     # copy the file to Malcolm for processing
-                                    artifactDestName = (
-                                        f"/home/{args.vmImageUsername}/Malcolm/pcap/upload/{'' if (artifactAttrs['netbox'] == True) else 'NBSITEID0,'}{artifactNewName}",
-                                    )
+                                    artifactDestName = f"/home/{args.vmImageUsername}/Malcolm/pcap/upload/{'' if (artifactAttrs['netbox'] == True) else 'NBSITEID0,'}{artifactNewName}"
                                     copyCode = malcolmVm.CopyFile(
                                         artifactFilespec,
                                         # TODO: Assuming the Malcolm directory like this might not be very robust
