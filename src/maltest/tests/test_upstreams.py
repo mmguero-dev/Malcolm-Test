@@ -218,7 +218,7 @@ def test_netbox_health_plugin(
     response.raise_for_status()
     health = response.json()
     LOGGER.debug(health)
-    assert health and all([v == "working" for k, v in health.items()])
+    assert health and all([v == "OK" for k, v in health.items()])
 
 
 @pytest.mark.arkime
