@@ -116,6 +116,8 @@ touch "$HOME"/.hushlogin
 mkdir -p "$HOME"/.local/bin "$HOME"/.config/procps "$HOME"/.config/systemd/user
 
 [[ ! -d ./Malcolm ]] && git clone --depth=1 --single-branch --recurse-submodules --shallow-submodules -b "$REPO_BRANCH" "$REPO_URL" Malcolm
+mkdir -p "$HOME"/Malcolm/arkime/parsers/ && \
+    curl -fsSL -o ./arkime/parsers/creditcard.lua https://raw.githubusercontent.com/arkime/arkime/refs/heads/main/capture/plugins/lua/samples/creditcard.lua
 
 rm -f "$HOME"/.bashrc \
       "$HOME"/.bash_aliases \

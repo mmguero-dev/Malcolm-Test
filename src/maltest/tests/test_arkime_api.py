@@ -6,6 +6,7 @@ import logging
 LOGGER = logging.getLogger(__name__)
 
 UPLOAD_ARTIFACTS = [
+    "pcap/protocols/HTTP_2.pcap",
     "pcap/protocols/Tunnels.pcap",
 ]
 
@@ -20,6 +21,8 @@ EXPECTED_VIEWS = [
 ]
 
 EXPECTED_EVENT_PROVIDERS = ['zeek', 'arkime', 'suricata']
+
+EXPECTED_LUA_TAGS = ["possible-credit-card"]
 
 
 @pytest.mark.arkime
@@ -375,3 +378,43 @@ def test_arkime_unique(
     unique = response.content.decode().splitlines()
     LOGGER.debug(unique)
     assert all([x in unique for x in EXPECTED_EVENT_PROVIDERS])
+
+
+@pytest.mark.pcap
+@pytest.mark.arkime
+def test_arkime_lua(
+    malcolm_url,
+    malcolm_http_auth,
+    artifact_hash_map,
+):
+    """test_arkime_lua
+
+    Test that the test arkime Lua rule got loaded from ./arkime/parsers/creditcard.lua and tagged
+    the appropriate session from HTTP_2.pcap
+
+    Args:
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+    """
+    assert all([artifact_hash_map.get(x, None) for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)])
+
+    response = requests.post(
+        f"{malcolm_url}/mapi/agg/tags",
+        headers={"Content-Type": "application/json"},
+        json={
+            "from": "0",
+            "filter": {
+                "event.provider": "arkime",
+                "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
+            },
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    buckets = {item['key']: item['doc_count'] for item in mmguero.deep_get(response.json(), ['tags', 'buckets'], [])}
+    LOGGER.debug(buckets)
+    LOGGER.debug([x for x in EXPECTED_LUA_TAGS if (buckets.get(x, 0) == 0)])
+    assert all([(buckets.get(x, 0) > 0) for x in EXPECTED_LUA_TAGS])
