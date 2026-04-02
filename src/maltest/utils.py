@@ -26,6 +26,7 @@ import tomli_w
 import urllib3
 import warnings
 
+from contextlib import nullcontext
 from collections import defaultdict
 from datetime import datetime, timezone
 from requests.auth import HTTPBasicAuth
@@ -870,15 +871,21 @@ class MalcolmVM(object):
             logger=self.logger,
         )
         if (exitCode == 0) and (len(output) > 1):
-            # split apart VM name, id, and network name info a dict
-            vmListRegex = re.compile(r'(\S+)(?:\s+(\S+))?(?:\s+(.*))?')
+            # split apart VM name, id, network name, and state info a dict
+            vmListRegex = re.compile(r'(\S+)(?:\s+(\S+))?(?:\s+(.*?))?(?:\s{2,}(.*))?$')
             vms = {}
             for line in output[1:]:
                 if match := vmListRegex.match(line):
                     name = match.group(1)
                     id_ = match.group(2) if match.group(2) else None
                     network = match.group(3).strip() if match.group(3) else None
-                    vms[name] = {"id": id_, "name": name, "network": network}
+                    state = match.group(4).strip() if match.group(4) else None
+                    vms[name] = {
+                        "id": id_,
+                        "name": name,
+                        "network": network,
+                        "state": state,
+                    }
             # see if we found this vm in the list of VMs returned
             result = vms.get(self.name, {})
             if result and result.get('network', None):
@@ -1011,7 +1018,7 @@ class MalcolmVM(object):
                 self.vmCpuCount,
                 '--memory',
                 f'{self.vmMemoryGigabytes}GB',
-                '--bootcapacity',
+                '--boot-capacity',
                 f'{self.vmDiskGigabytes}GB',
                 '--user',
                 self.vmImageUsername,
@@ -1085,7 +1092,7 @@ class MalcolmVM(object):
                         self.vmCpuCount,
                         '--memory',
                         f'{self.vmMemoryGigabytes}GB',
-                        '--bootcap',
+                        '--boot-capacity',
                         f'{self.vmDiskGigabytes}GB',
                         '--provision',
                         provisionFile,
@@ -1152,6 +1159,7 @@ class MalcolmVM(object):
         continueThroughShutdown=False,
         tolerateFailure=False,
         overrideBuildName=None,
+        workingDirectory=None,
     ):
         """
         ProvisionTOML: Save provided data as a TOML file and provision it (see ProvisionFile)
@@ -1168,12 +1176,13 @@ class MalcolmVM(object):
         with mmguero.temporary_filename(suffix='.toml') as tomlFileName:
             with open(tomlFileName, 'w') as tomlFile:
                 tomlFile.write(tomli_w.dumps(data))
-            return self.ProvisionFile(
-                tomlFileName,
-                continueThroughShutdown=continueThroughShutdown,
-                tolerateFailure=tolerateFailure,
-                overrideBuildName=overrideBuildName,
-            )
+            with mmguero.pushd(workingDirectory) if workingDirectory else nullcontext:
+                return self.ProvisionFile(
+                    tomlFileName,
+                    continueThroughShutdown=continueThroughShutdown,
+                    tolerateFailure=tolerateFailure,
+                    overrideBuildName=overrideBuildName,
+                )
 
     def CopyFile(
         self,
@@ -1232,6 +1241,7 @@ class MalcolmVM(object):
                 continueThroughShutdown=continueThroughShutdown,
                 tolerateFailure=tolerateFailure,
                 overrideBuildName=overrideBuildName,
+                workingDirectory=os.path.dirname(os.path.realpath(sourceFileSpec)),
             )
         return code
 
