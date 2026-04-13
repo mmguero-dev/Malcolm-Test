@@ -1176,7 +1176,7 @@ class MalcolmVM(object):
         with mmguero.temporary_filename(suffix='.toml') as tomlFileName:
             with open(tomlFileName, 'w') as tomlFile:
                 tomlFile.write(tomli_w.dumps(data))
-            with mmguero.pushd(workingDirectory) if workingDirectory else nullcontext:
+            with mmguero.pushd(workingDirectory) if workingDirectory else nullcontext():
                 return self.ProvisionFile(
                     tomlFileName,
                     continueThroughShutdown=continueThroughShutdown,
