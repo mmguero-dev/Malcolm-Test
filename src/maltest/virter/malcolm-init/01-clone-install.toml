@@ -142,6 +142,11 @@ if [[ -n "$EXTRA" ]]; then
   readarray -td '' EXTRA_ARRAY < <(awk '{ gsub(/\|/,"\0"); print; }' <<<"$EXTRA|"); unset 'EXTRA_ARRAY[-1]';
 fi
 EXTRA_ARRAY+=( "nginx.env:NGINX_LOG_ACCESS_AND_ERRORS=true" )
+EXTRA_ARRAY+=( "pipeline.env:STRELKA_SCANNERS=ScanBatch,ScanBmpEof,ScanBzip2,ScanCapa,ScanClamav,ScanDmg,ScanDocx,ScanDonut,ScanEmail,ScanEncryptedDoc,ScanEncryptedZ
+ip,ScanEntropy,ScanExiftool,ScanGifEof,ScanGzip,ScanHtml,ScanIqy,ScanIso,ScanJarManifest,ScanJavascript,ScanJnlp,ScanJpegEof,ScanJson,Sc
+anLibarchive,ScanLnk,ScanLsb,ScanLzma,ScanMacho,ScanManifest,ScanMsi,ScanOle,ScanOnenote,ScanPdf,ScanPe,ScanPgp,ScanPhp,ScanPkcs7,ScanPl
+ist,ScanPngEof,ScanPyinstaller,ScanQr,ScanRar,ScanRpm,ScanRtf,ScanSevenZip,ScanSwf,ScanTar,ScanTnef,ScanTranscode,ScanUdf,ScanUpx,ScanUr
+l,ScanVb,ScanVba,ScanVhd,ScanVsto,ScanXar,ScanXl4ma,ScanXml,ScanYara,ScanZip,ScanZlib,ScanZstd" )
 
 pushd Malcolm
 SETTINGS_FILE="$(mktemp --suffix=.json)"
@@ -294,9 +299,6 @@ jq -f "${JQ_FILE}" "${SETTINGS_FILE}" | sponge "${SETTINGS_FILE}"
 
 python3 ./scripts/install.py --configure --verbose "${DEBUG}" --configure --non-interactive --import-malcolm-config-file "${SETTINGS_FILE}" --extra "${EXTRA_ARRAY[@]}"
 rm -f "${SETTINGS_FILE}" "${JQ_FILE}"
-
-CAPA_SCANNER="ScanCapa"
-sed "/#  '$CAPA_SCANNER':/,/^[^\#]/ { s/^#//; }" ./strelka/config/backend/backend.yaml | yq | sponge ./strelka/config/backend/backend.yaml
 
 if command -v direnv &>/dev/null; then
     eval "$(direnv hook bash)"
