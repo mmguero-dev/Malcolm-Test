@@ -142,11 +142,7 @@ if [[ -n "$EXTRA" ]]; then
   readarray -td '' EXTRA_ARRAY < <(awk '{ gsub(/\|/,"\0"); print; }' <<<"$EXTRA|"); unset 'EXTRA_ARRAY[-1]';
 fi
 EXTRA_ARRAY+=( "nginx.env:NGINX_LOG_ACCESS_AND_ERRORS=true" )
-EXTRA_ARRAY+=( "pipeline.env:STRELKA_SCANNERS=ScanBatch,ScanBmpEof,ScanBzip2,ScanCapa,ScanClamav,ScanDmg,ScanDocx,ScanDonut,ScanEmail,ScanEncryptedDoc,ScanEncryptedZ
-ip,ScanEntropy,ScanExiftool,ScanGifEof,ScanGzip,ScanHtml,ScanIqy,ScanIso,ScanJarManifest,ScanJavascript,ScanJnlp,ScanJpegEof,ScanJson,Sc
-anLibarchive,ScanLnk,ScanLsb,ScanLzma,ScanMacho,ScanManifest,ScanMsi,ScanOle,ScanOnenote,ScanPdf,ScanPe,ScanPgp,ScanPhp,ScanPkcs7,ScanPl
-ist,ScanPngEof,ScanPyinstaller,ScanQr,ScanRar,ScanRpm,ScanRtf,ScanSevenZip,ScanSwf,ScanTar,ScanTnef,ScanTranscode,ScanUdf,ScanUpx,ScanUr
-l,ScanVb,ScanVba,ScanVhd,ScanVsto,ScanXar,ScanXl4ma,ScanXml,ScanYara,ScanZip,ScanZlib,ScanZstd" )
+EXTRA_ARRAY+=( "pipeline.env:STRELKA_SCANNERS=ScanBatch,ScanBmpEof,ScanBzip2,ScanCapa,ScanClamav,ScanDmg,ScanDocx,ScanDonut,ScanEmail,ScanEncryptedDoc,ScanEncryptedZip,ScanEntropy,ScanExiftool,ScanGifEof,ScanGzip,ScanHtml,ScanIqy,ScanIso,ScanJarManifest,ScanJavascript,ScanJnlp,ScanJpegEof,ScanJson,ScanLibarchive,ScanLnk,ScanLsb,ScanLzma,ScanMacho,ScanManifest,ScanMsi,ScanOle,ScanOnenote,ScanPdf,ScanPe,ScanPgp,ScanPhp,ScanPkcs7,ScanPlist,ScanPngEof,ScanPyinstaller,ScanQr,ScanRar,ScanRpm,ScanRtf,ScanSevenZip,ScanStrings,ScanSwf,ScanTar,ScanTnef,ScanTranscode,ScanUdf,ScanUpx,ScanUrl,ScanVb,ScanVba,ScanVhd,ScanVsto,ScanXar,ScanXl4ma,ScanXml,ScanYara,ScanZip,ScanZlib,ScanZstd" )
 
 pushd Malcolm
 SETTINGS_FILE="$(mktemp --suffix=.json)"
