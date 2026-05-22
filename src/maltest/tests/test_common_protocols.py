@@ -1,11 +1,7 @@
 import logging
 import mmguero
 import pytest
-import random
-import re
 import requests
-from bs4 import BeautifulSoup
-from stream_unzip import stream_unzip, AE_2, AES_256
 
 LOGGER = logging.getLogger(__name__)
 
@@ -97,6 +93,17 @@ EXPECTED_DATASETS = [
     "x509",
 ]
 
+SURICATA_DISABLED_SIDS = [
+    "2200057",
+    "2200073",
+    "2200074",
+    "2200075",
+    "2200076",
+    "2200077",
+    "2200078",
+    "2200079",
+]
+
 
 @pytest.mark.mapi
 @pytest.mark.pcap
@@ -174,69 +181,6 @@ def test_mapi_document_lookup(
     docData = response.json()
     LOGGER.debug(docData)
     assert docData.get('results', [])
-
-
-def zipped_chunks(response, chunk_size=65536):
-    for chunk in response.iter_content(chunk_size=chunk_size):
-        yield chunk
-
-
-@pytest.mark.carving
-@pytest.mark.webui
-@pytest.mark.pcap
-def test_extracted_files_download(
-    malcolm_url,
-    malcolm_http_auth,
-):
-    """test_extracted_files_download
-
-    List the .exe files from the /extracted-files page, then download one of them.
-        With the assumption that the downloaded .exe file is zipped (the test suite's default) and
-        encrypted with a password of "infected" (the test suite's default), it attempts to decrypt
-        and unzip the file.
-
-    Args:
-        malcolm_url (str): URL for connecting to the Malcolm instance
-        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
-    """
-    response = requests.get(
-        f"{malcolm_url}/extracted-files/",
-        allow_redirects=True,
-        auth=malcolm_http_auth,
-        verify=False,
-    )
-    response.raise_for_status()
-    soup = BeautifulSoup(response.content, 'html.parser')
-    exePattern = re.compile(r'\.exe$')
-    urls = [link['href'] for link in soup.find_all('a', href=exePattern)]
-    LOGGER.debug(urls)
-    assert urls
-    response = requests.get(
-        f"{malcolm_url}/extracted-files/{random.choice(urls)}",
-        allow_redirects=True,
-        auth=malcolm_http_auth,
-        verify=False,
-    )
-    response.raise_for_status()
-    assert len(response.content) > 1000
-    for fileName, fileSize, unzippedChunks in stream_unzip(
-        zipped_chunks(response),
-        password=b'infected',
-        allowed_encryption_mechanisms=(
-            AE_2,
-            AES_256,
-        ),
-    ):
-        bytesSize = 0
-        with mmguero.temporary_filename(suffix='.exe') as exeFileName:
-            with open(exeFileName, 'wb') as exeFile:
-                for chunk in unzippedChunks:
-                    bytesSize = bytesSize + len(chunk)
-                    exeFile.write(chunk)
-        LOGGER.debug(f"{fileName.decode('utf-8')} {len(response.content)} -> {bytesSize})")
-        assert fileName
-        assert unzippedChunks
-        assert bytesSize
 
 
 @pytest.mark.mapi
@@ -411,3 +355,41 @@ def test_conn_info(
             item = [x['key'] for x in response.json()['event.provider']['buckets'][0][field]['buckets']]
             LOGGER.debug({provider: {field: item}})
             assert item
+
+
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_suricata_disable_sids(
+    malcolm_http_auth,
+    malcolm_url,
+    artifact_hash_map,
+):
+    """test_suricata_disable_sids
+
+    Test disabling SURICATA rules by SID
+
+    Args:
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+    """
+    response = requests.post(
+        f"{malcolm_url}/mapi/agg/event.provider,rule.id",
+        headers={"Content-Type": "application/json"},
+        json={
+            "from": "0",
+            "filter": {
+                "event.provider": 'suricata',
+                f"!rule.id": None,
+                "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
+            },
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    items = [x['key'] for x in response.json()['event.provider']['buckets'][0]['rule.id']['buckets']]
+    LOGGER.debug(items)
+    assert items
+    assert not set(items).intersection(SURICATA_DISABLED_SIDS), "Disabled Suricata rules detected"

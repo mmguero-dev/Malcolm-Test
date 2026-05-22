@@ -66,6 +66,29 @@ EXPECTED_PLUGINS = {
     'netbox_topology_views',
 }
 
+LOGSTASH_NETBOX_ENRICHMENT_DATASETS = [
+    "filescan.strelka",
+    "suricata.alert",
+    "zeek.conn",
+    "zeek.dce_rpc",
+    "zeek.dhcp",
+    "zeek.dns",
+    "zeek.known_hosts",
+    "zeek.known_services",
+    "zeek.login",
+    "zeek.ntlm",
+    "zeek.notice",
+    "zeek.rdp",
+    "zeek.rfb",
+    "zeek.signatures",
+    "zeek.smb_cmd",
+    "zeek.smb_files",
+    "zeek.smb_mapping",
+    "zeek.software",
+    "zeek.ssh",
+    "zeek.weird",
+]
+
 
 def _netbox_mapi_get(malcolm_url, malcolm_http_auth, path):
     response = requests.get(
@@ -106,7 +129,6 @@ def test_netbox_cross_segment(
                 "!source.segment.name": None,
                 "!destination.segment.name": None,
                 "tags": "cross_segment",
-                "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
             },
         },
         allow_redirects=True,
@@ -130,6 +152,49 @@ def test_netbox_cross_segment(
     LOGGER.debug(results)
     assert results.get("zeek", None)
     assert results.get("suricata", None)
+
+
+@pytest.mark.netbox
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_netbox_datasets(
+    malcolm_http_auth,
+    malcolm_url,
+    artifact_hash_map,
+):
+    """test_netbox_datasets
+
+    Check which event provider/dataset have netbox enrichment
+
+    Args:
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+    """
+    response = requests.post(
+        f"{malcolm_url}/mapi/agg/event.provider,event.dataset",
+        headers={"Content-Type": "application/json"},
+        json={
+            "from": "0",
+            "filter": {
+                "tags": "netbox",
+            },
+        },
+        allow_redirects=True,
+        auth=malcolm_http_auth,
+        verify=False,
+    )
+    response.raise_for_status()
+    responseJson = response.json()
+    found_datasets = {
+        f"{provider['key']}.{dataset['key']}"
+        for provider in responseJson["event.provider"]["buckets"]
+        for dataset in provider["event.dataset"]["buckets"]
+    }
+    LOGGER.debug(found_datasets)
+    assert set(LOGSTASH_NETBOX_ENRICHMENT_DATASETS).issubset(
+        found_datasets
+    ), f"Missing datasets: {set(LOGSTASH_NETBOX_ENRICHMENT_DATASETS) - found_datasets}"
 
 
 @pytest.mark.netbox
@@ -311,6 +376,35 @@ def test_netbox_auto_subnet_filters(
     ]
     LOGGER.debug(buckets)
     assert not buckets
+
+
+@pytest.mark.netbox
+@pytest.mark.mapi
+def test_netbox_device_roles_have_hierarchy(malcolm_http_auth, malcolm_url, artifact_hash_map):
+    """device roles include nested roles (parent set, _depth > 0)"""
+    data = _netbox_mapi_get(malcolm_url, malcolm_http_auth, "/dcim/device-roles/?limit=0")
+    roles = data["results"]
+    LOGGER.debug(f"total device roles: {data['count']}")
+
+    nested = [r for r in roles if r.get("parent") is not None and r.get("_depth", 0) > 0]
+    root = [r for r in roles if r.get("parent") is None and r.get("_depth", 0) == 0]
+
+    LOGGER.debug(f"root roles: {len(root)}, nested roles: {len(nested)}")
+    assert len(root) >= 1, "no root-level device roles found"
+    assert len(nested) >= 1, "no nested device roles found (hierarchy not created)"
+
+    # spot-check a few known parent/child relationships
+    role_map = {r["name"]: r for r in roles}
+    for child, parent in [
+        ("PLC", "Controller"),
+        ("Firewall", "Gateway"),
+        ("HMI", "OT Client"),
+        ("IDS", "Monitoring"),
+    ]:
+        if child in role_map and parent in role_map:
+            assert (
+                role_map[child]["parent"]["name"] == parent
+            ), f"expected {child}.parent == {parent}, got {role_map[child].get('parent')}"
 
 
 # ── SUPERUSER ──────────────────────────────────────────────────────────────────
