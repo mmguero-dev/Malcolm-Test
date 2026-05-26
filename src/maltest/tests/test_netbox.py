@@ -66,6 +66,10 @@ EXPECTED_PLUGINS = {
     'netbox_topology_views',
 }
 
+EXPECTED_SCRIPTS = {
+    'NewBranchScript',
+}
+
 LOGSTASH_NETBOX_ENRICHMENT_DATASETS = [
     "filescan.strelka",
     "suricata.alert",
@@ -567,6 +571,24 @@ def test_netbox_permissions_group_assignments(malcolm_http_auth, malcolm_url, ar
         assert perm, f"{perm_name} not found"
         groups = [g["name"] for g in perm.get("groups", [])]
         assert expected_group in groups, f"{perm_name} not assigned to {expected_group}, got: {groups}"
+
+
+# ── SCRIPTS ────────────────────────────────────────────────────────────────────
+
+
+@pytest.mark.netbox
+@pytest.mark.mapi
+def test_netbox_scripts_endpoint(malcolm_http_auth, malcolm_url, artifact_hash_map):
+    """extras/scripts endpoint lists installed custom scripts"""
+    scripts = set(
+        [
+            item["name"]
+            for item in _netbox_mapi_get(malcolm_url, malcolm_http_auth, "/extras/scripts/").get("results", [])
+        ]
+    )
+    LOGGER.debug(f"installed scripts: {scripts}")
+    missing = EXPECTED_SCRIPTS - scripts
+    assert not missing, f"missing expected scripts: {missing}"
 
 
 # ── PLUGINS ────────────────────────────────────────────────────────────────────
