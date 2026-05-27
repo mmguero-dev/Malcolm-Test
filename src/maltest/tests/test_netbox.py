@@ -367,7 +367,7 @@ def test_netbox_auto_subnet_filters(
     artifact_hash_map,
 ):
     # this should *NOT* return anything, because:
-    #   NETBOX_AUTO_POPULATE_SUBNETS=*:10.0.0.0/8,!10.100.0.0/16
+    #   NETBOX_AUTO_POPULATE_SUBNETS=*:!10.100.0.0/16
     data = _netbox_mapi_get(malcolm_url, malcolm_http_auth, "/ipam/prefixes/?prefix=10.100.0.0/16")
     buckets = [
         {

@@ -7,7 +7,7 @@ AUTH_METHOD = 'basic'
 # username: maltest
 # password: M@lc0lm
 AUTH_USERNAME = 'maltest'
-# openssl passwd -1
+# openssl passwd -6
 AUTH_PASSWORD_OPENSSL = '$1$eL6r6.9S$6cRYiBNnOPd1fZZG3Z50P0'
 # htpasswd -n -B username | cut -d: -f2
 AUTH_PASSWORD_HTPASSWD = '$2y$05$PMhfXVcC.8ztE5yx/IJV9ud59XcwZI7/1Z3mW2QRvs5DMz61G0ynS'

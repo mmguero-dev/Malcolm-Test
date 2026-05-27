@@ -558,7 +558,7 @@ class MalcolmVM(object):
         )
         self.malcolmPassword = self.osEnv.get('MALCOLM_AUTH_PASSWORD', 'M@lc0lm')
         err, out = mmguero.run_process(
-            ['openssl', 'passwd', '-quiet', '-stdin', '-1'],
+            ['openssl', 'passwd', '-quiet', '-stdin', '-6'],
             stdout=True,
             stderr=False,
             stdin=self.malcolmPassword,
