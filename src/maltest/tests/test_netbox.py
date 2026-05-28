@@ -70,26 +70,29 @@ EXPECTED_SCRIPTS = {
     'NewBranchScript',
 }
 
+# The commented-out ones here actually *are* normally enriched, but
+# they happen to overlap with the IP range specified to test `NETBOX_AUTO_POPULATE_SUBNETS`
+# in so I'm just excluding them here.
 LOGSTASH_NETBOX_ENRICHMENT_DATASETS = [
     "filescan.strelka",
     "suricata.alert",
     "zeek.conn",
-    "zeek.dce_rpc",
+    # "zeek.dce_rpc",
     "zeek.dhcp",
     "zeek.dns",
     "zeek.known_hosts",
     "zeek.known_services",
-    "zeek.login",
+    # "zeek.login",
     "zeek.ntlm",
     "zeek.notice",
-    "zeek.rdp",
-    "zeek.rfb",
+    # "zeek.rdp",
+    # "zeek.rfb",
     "zeek.signatures",
     "zeek.smb_cmd",
     "zeek.smb_files",
     "zeek.smb_mapping",
     "zeek.software",
-    "zeek.ssh",
+    # "zeek.ssh",
     "zeek.weird",
 ]
 
