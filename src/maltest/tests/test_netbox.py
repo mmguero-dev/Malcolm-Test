@@ -87,7 +87,7 @@ LOGSTASH_NETBOX_ENRICHMENT_DATASETS = [
     "zeek.notice",
     # "zeek.rdp",
     # "zeek.rfb",
-    "zeek.signatures",
+    # "zeek.signatures",
     "zeek.smb_cmd",
     "zeek.smb_files",
     "zeek.smb_mapping",
