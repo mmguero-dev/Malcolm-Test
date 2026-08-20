@@ -53,6 +53,7 @@ LIVE_CAPTURE_ZEEK = "false"
 LOGSTASH_EXPOSE = "false"
 LOGSTASH_HOST = "logstash:5044"
 LOGSTASH_MEMORY = ""
+LOGSTASH_NETBOX_ENRICHMENT_DATASETS = "default,ot"
 LOGSTASH_WORKERS = "2"
 MALCOLM_CONTAINER_RUNTIME = "docker"
 MALCOLM_PROFILE = "malcolm"
@@ -88,6 +89,8 @@ REVERSE_DNS = "false"
 REVERSE_PROXIED = "false"
 RUNTIME = "docker"
 SFTP_EXPOSE = "false"
+STRELKA_SCANNERS = "default,ScanStrings,ScanCapa"
+SURICATA_DISABLE_SIDS = "2200057,2200073,2200074,2200075,2200076,2200077,2200078,2200079"
 SURICATA_PATH = ""
 SURICATA_RULE_UPDATE = "false"
 SYSLOG_PORT_TCP = "0"
@@ -98,11 +101,13 @@ TRAEFIK_HOST_TRAEFIK_RESOLVER = ""
 VERBOSE = "false"
 ZEEK_ICS = "true"
 ZEEK_ICS_BEST_GUESS = "true"
-ZEEK_INTEL = ""
+ZEEK_INTEL = "false"
 ZEEK_INTEL_CRON_EXPRESSION = ""
 ZEEK_INTEL_FEED_SINCE = "24 hours ago"
 ZEEK_INTEL_ITEM_EXPIRATION = "1min"
-ZEEK_INTEL_ON_STARTUP = ""
+ZEEK_INTEL_LIVE = "false"
+ZEEK_INTEL_OFFLINE = "false"
+ZEEK_INTEL_ON_STARTUP = "false"
 ZEEK_PATH = ""
 
 
@@ -144,8 +149,6 @@ if [[ -n "$EXTRA" ]]; then
   readarray -td '' EXTRA_ARRAY < <(awk '{ gsub(/\|/,"\0"); print; }' <<<"$EXTRA|"); unset 'EXTRA_ARRAY[-1]';
 fi
 EXTRA_ARRAY+=( "nginx.env:NGINX_LOG_ACCESS_AND_ERRORS=true" )
-EXTRA_ARRAY+=( "pipeline.env:STRELKA_SCANNERS=ScanBatch,ScanBmpEof,ScanBzip2,ScanCapa,ScanClamav,ScanDmg,ScanDocx,ScanDonut,ScanEmail,ScanEncryptedDoc,ScanEncryptedZip,ScanEntropy,ScanExiftool,ScanGifEof,ScanGzip,ScanHtml,ScanIqy,ScanIso,ScanJarManifest,ScanJavascript,ScanJnlp,ScanJpegEof,ScanJson,ScanLibarchive,ScanLnk,ScanLsb,ScanLzma,ScanMacho,ScanManifest,ScanMsi,ScanOle,ScanOnenote,ScanPdf,ScanPe,ScanPgp,ScanPhp,ScanPkcs7,ScanPlist,ScanPngEof,ScanPyinstaller,ScanQr,ScanRar,ScanRpm,ScanRtf,ScanSevenZip,ScanStrings,ScanSwf,ScanTar,ScanTnef,ScanTranscode,ScanUdf,ScanUpx,ScanUrl,ScanVb,ScanVba,ScanVhd,ScanVsto,ScanXar,ScanXl4ma,ScanXml,ScanYara,ScanZip,ScanZlib,ScanZstd" )
-EXTRA_ARRAY+=( "suricata.env:SURICATA_DISABLE_SIDS=2200057,2200073,2200074,2200075,2200076,2200077,2200078,2200079" )
 
 pushd Malcolm
 SETTINGS_FILE="$(mktemp --suffix=.json)"
@@ -253,6 +256,7 @@ tee "${JQ_FILE}" >/dev/null <<EOF
     | .configuration.netboxMode = "${NETBOX:-local}"
     | .configuration.netboxSiteName = "${NETBOX_SITE_NAME:-Malcolm}"
     | .configuration.netboxUrl = "${NETBOX_URL}"
+    | .configuration.logstashNetBoxEnrichedDatasets = "${LOGSTASH_NETBOX_ENRICHMENT_DATASETS:-default}"
     | .configuration.nginxResolverIpv4 = ${NGINX_RESOLVER_IPV4:-true}
     | .configuration.nginxResolverIpv6 = ${NGINX_RESOLVER_IPV6:-false}
     | .configuration.nginxSSL = ${HTTPS:-true}
@@ -274,8 +278,10 @@ tee "${JQ_FILE}" >/dev/null <<EOF
     | .configuration.processGroupId = ${PGID:-$(id -g)}
     | .configuration.processUserId = ${PUID:-$(id -u)}
     | .configuration.reverseDns = ${REVERSE_DNS:-false}
+    | .configuration.pipelineScanners = "${STRELKA_SCANNERS:-default}"
     | .configuration.suricataLogDir = "${SURICATA_PATH}"
     | .configuration.suricataRuleUpdate = ${SURICATA_RULE_UPDATE:-false}
+    | .configuration.suricataDisableSids = "${SURICATA_DISABLE_SIDS:-}"
     | .configuration.syslogTcpPort = ${SYSLOG_PORT_TCP:-0}
     | .configuration.syslogUdpPort = ${SYSLOG_PORT_UDP:-0}
     | .configuration.traefikEntrypoint = "${TRAEFIK_ENTRYPOINT}"
@@ -292,6 +298,8 @@ tee "${JQ_FILE}" >/dev/null <<EOF
     | .configuration.zeekIntelOnStartup = ${ZEEK_INTEL_ON_STARTUP:-false}
     | .configuration.zeekLogDir = "${ZEEK_PATH}"
     | .configuration.zeekPullIntelligenceFeeds = ${ZEEK_INTEL:-false}
+    | .configuration.zeekIntelLive = ${ZEEK_INTEL_LIVE:-false}
+    | .configuration.zeekIntelOffline = ${ZEEK_INTEL_OFFLINE:-false}
 EOF
 
 jq -f "${JQ_FILE}" "${SETTINGS_FILE}" | sponge "${SETTINGS_FILE}"

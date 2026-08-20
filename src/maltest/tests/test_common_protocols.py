@@ -52,6 +52,7 @@ EXPECTED_DATASETS = [
     "http",
     "ipsec",
     "irc",
+    "ja4d",
     "ja4ssh",
     "kerberos",
     "known_certs",
@@ -393,3 +394,63 @@ def test_suricata_disable_sids(
     LOGGER.debug(items)
     assert items
     assert not set(items).intersection(SURICATA_DISABLED_SIDS), "Disabled Suricata rules detected"
+
+
+@pytest.mark.mapi
+@pytest.mark.pcap
+def test_ja4_fields(
+    malcolm_http_auth,
+    malcolm_url,
+    artifact_hash_map,
+):
+    """test_ja4_fields
+
+    Check that JA4+ fingerprint fields are populated for conn, ssl, http, and ja4ssh logs
+        (see cisagov/Malcolm#1065 and related fixes for JA4+ field-order drift)
+
+    Args:
+        malcolm_http_auth (HTTPBasicAuth): username and password for the Malcolm instance
+        malcolm_url (str): URL for connecting to the Malcolm instance
+        artifact_hash_map (defaultdict(lambda: None)): a map of artifact files' full path to their file hash
+    """
+    dataset_fields = {
+        "conn": (
+            "zeek.conn.ja4t",
+            "zeek.conn.ja4ts",
+            "zeek.conn.ja4l",
+            "zeek.conn.ja4ls",
+            "zeek.conn.ja4l_delta",
+            "zeek.conn.ja4ls_delta",
+        ),
+        "ssl": (
+            "tls.ja4",
+            "tls.ja4s",
+            "tls.server.ja4s",
+        ),
+        "http": ("zeek.http.ja4h",),
+        "ja4ssh": ("zeek.ja4ssh.ja4ssh",),
+        "ja4d": ("zeek.ja4d.ja4d",),
+    }
+
+    for dataset, fields in dataset_fields.items():
+        for field in fields:
+            response = requests.post(
+                f"{malcolm_url}/mapi/agg/event.dataset,{field}",
+                headers={"Content-Type": "application/json"},
+                json={
+                    "from": "0",
+                    "filter": {
+                        "event.provider": "zeek",
+                        "event.dataset": dataset,
+                        f"!{field}": None,
+                        "tags": [artifact_hash_map[x] for x in mmguero.get_iterable(UPLOAD_ARTIFACTS)],
+                    },
+                },
+                allow_redirects=True,
+                auth=malcolm_http_auth,
+                verify=False,
+            )
+            response.raise_for_status()
+            items = [x['key'] for x in response.json()['event.dataset']['buckets'][0][field]['buckets']]
+            LOGGER.debug({dataset: {field: items}})
+            assert items, f"no values found for {field} in event.dataset={dataset}"
