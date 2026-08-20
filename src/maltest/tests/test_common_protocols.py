@@ -428,8 +428,8 @@ def test_ja4_fields(
             "tls.server.ja4s",
         ),
         "http": ("zeek.http.ja4h",),
-        "ja4ssh": ("zeek.ja4ssh.ja4ssh",),
-        "ja4d": ("zeek.ja4d.ja4d",),
+        "ja4ssh": ("zeek.ssh.ja4ssh",),
+        "ja4d": ("zeek.dhcp.ja4d",),
     }
 
     for dataset, fields in dataset_fields.items():
