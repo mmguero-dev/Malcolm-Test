@@ -256,7 +256,12 @@ tee "${JQ_FILE}" >/dev/null <<EOF
     | .configuration.netboxMode = "${NETBOX:-local}"
     | .configuration.netboxSiteName = "${NETBOX_SITE_NAME:-Malcolm}"
     | .configuration.netboxUrl = "${NETBOX_URL}"
-    | .configuration.logstashNetBoxEnrichedDatasets = "${LOGSTASH_NETBOX_ENRICHMENT_DATASETS:-default}"
+    | .configuration.logstashNetBoxEnrichedDatasets = (
+        "${LOGSTASH_NETBOX_ENRICHMENT_DATASETS:-default}"
+        | split(",")
+        | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))
+        | map(select(length > 0))
+      )
     | .configuration.nginxResolverIpv4 = ${NGINX_RESOLVER_IPV4:-true}
     | .configuration.nginxResolverIpv6 = ${NGINX_RESOLVER_IPV6:-false}
     | .configuration.nginxSSL = ${HTTPS:-true}
@@ -269,19 +274,34 @@ tee "${JQ_FILE}" >/dev/null <<EOF
     | .configuration.osMemory = "${OPENSEARCH_MEMORY}"
     | .configuration.pcapDir = "${PCAP_PATH}"
     | .configuration.pcapFilter = "${CAPTURE_FILTER}"
-    | .configuration.pcapIface = "${CAPTURE_IFACE}"
+    | .configuration.pcapIface = (
+        "${CAPTURE_IFACE:-}"
+        | split(",")
+        | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))
+        | map(select(length > 0))
+      )
     | .configuration.pcapNetSniff = ${CAPTURE_NETSNIFF}
     | .configuration.pcapNodeName = "${NODE_NAME:-$(hostname -s)}"
     | .configuration.pcapTcpDump = ${CAPTURE_TCPDUMP}
     | .configuration.pipelineEnabled = ${PIPELINE_ENABLED:-true}
+    | .configuration.pipelineScanners = (
+        "${STRELKA_SCANNERS:-}"
+        | split(",")
+        | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))
+        | map(select(length > 0))
+      )
     | .configuration.pipelineWorkers = ${PIPELINE_WORKERS:-1}
     | .configuration.processGroupId = ${PGID:-$(id -g)}
     | .configuration.processUserId = ${PUID:-$(id -u)}
     | .configuration.reverseDns = ${REVERSE_DNS:-false}
-    | .configuration.pipelineScanners = "${STRELKA_SCANNERS:-default}"
     | .configuration.suricataLogDir = "${SURICATA_PATH}"
     | .configuration.suricataRuleUpdate = ${SURICATA_RULE_UPDATE:-false}
-    | .configuration.suricataDisableSids = "${SURICATA_DISABLE_SIDS:-}"
+    | .configuration.suricataDisableSids = (
+        "${SURICATA_DISABLE_SIDS:-}"
+        | split(",")
+        | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))
+        | map(select(length > 0))
+      )
     | .configuration.syslogTcpPort = ${SYSLOG_PORT_TCP:-0}
     | .configuration.syslogUdpPort = ${SYSLOG_PORT_UDP:-0}
     | .configuration.traefikEntrypoint = "${TRAEFIK_ENTRYPOINT}"
