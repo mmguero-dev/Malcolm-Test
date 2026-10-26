@@ -335,10 +335,10 @@ class ElasticsearchObjs(DatabaseObjs):
         self.ElasticImport = mmguero.dynamic_import('elasticsearch', 'elasticsearch', interactive=False)
         self.ElasticDslImport = mmguero.dynamic_import('elasticsearch_dsl', 'elasticsearch-dsl', interactive=False)
         if self.ElasticImport:
-            self.DatabaseClass = self.elasticImport.Elasticsearch
+            self.DatabaseClass = self.ElasticImport.Elasticsearch
         if self.ElasticDslImport:
-            self.SearchClass = self.elasticDslImport.Search
-            self.AggregationClass = self.elasticDslImport.A
+            self.SearchClass = self.ElasticDslImport.Search
+            self.AggregationClass = self.ElasticDslImport.A
         if username:
             self.DatabaseInitArgs['basic_auth'] = (username, password)
 
@@ -415,6 +415,9 @@ class MalcolmTestCollection(object):
         """
         result = dict()
         for testPyPath in self.collected:
+            # tracks which module-level variable is being evaluated so that it can be
+            #   named in the ValueError handler below
+            variableName = None
             try:
                 testArtifactList = list()
                 testNetBoxEnrich = False
@@ -425,8 +428,10 @@ class MalcolmTestCollection(object):
                         for target in node.targets:
                             if isinstance(target, ast.Name):
                                 if target.id == UPLOAD_ARTIFACT_LIST_NAME:
+                                    variableName = target.id
                                     testArtifactList.append(ast.literal_eval(node.value))
                                 elif target.id == NETBOX_ENRICH_BOOL_NAME:
+                                    variableName = target.id
                                     testNetBoxEnrich = mmguero.str2bool(str(ast.literal_eval(node.value)))
                 for artifact in list(set(mmguero.flatten(testArtifactList))):
                     if artifact not in result:
@@ -438,7 +443,9 @@ class MalcolmTestCollection(object):
             except SyntaxError:
                 self.logger.error(f"Error: '{testPyPath}' has invalid syntax")
             except ValueError as ve:
-                self.logger.error(f"Error: Unable to evaulate '{variable_name}' in '{testPyPath}': {ve}")
+                self.logger.error(
+                    f"Error: Unable to evaluate '{variableName or 'module-level assignment'}' in '{testPyPath}': {ve}"
+                )
             except Exception as e:
                 self.logger.error(f"Error: '{testPyPath}': {e}")
         return result
