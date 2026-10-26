@@ -8,6 +8,7 @@ ARKIME_ALLOW_WISE_GUI_CONFIG = "false"
 ARKIME_EXPOSE_WISE_GUI = "true"
 ARKIME_WISE_SERVICE_URL = "http://arkime:8081"
 AUTO_ARKIME = "true"
+AUTO_COMMUNITY_ID = "true"
 AUTO_FREQ = "true"
 AUTO_OUI = "true"
 AUTO_SURICATA = "true"
@@ -47,6 +48,7 @@ LIVE_CAPTURE_FILTER = ""
 LIVE_CAPTURE_IFACE = "primary"
 LIVE_CAPTURE_IFACE_TWEAK = "false"
 LIVE_CAPTURE_NETSNIFF = "false"
+LIVE_CAPTURE_STATS = "true"
 LIVE_CAPTURE_SURICATA = "false"
 LIVE_CAPTURE_TCPDUMP = "false"
 LIVE_CAPTURE_ZEEK = "false"
@@ -97,7 +99,8 @@ SYSLOG_PORT_TCP = "0"
 SYSLOG_PORT_UDP = "0"
 TRAEFIK_ENTRYPOINT = ""
 TRAEFIK_HOST = ""
-TRAEFIK_HOST_TRAEFIK_RESOLVER = ""
+TRAEFIK_HOST_OPENSEARCH = ""
+TRAEFIK_RESOLVER = ""
 VERBOSE = "false"
 ZEEK_ICS = "true"
 ZEEK_ICS_BEST_GUESS = "true"
@@ -154,9 +157,10 @@ pushd Malcolm
 SETTINGS_FILE="$(mktemp --suffix=.json)"
 JQ_FILE="$(mktemp --suffix=.jq)"
 
+( [[ -n "${VERBOSE}" ]] && [[ "${VERBOSE}" != "false" ]] && [[ "${VERBOSE}" != "0" ]] ) && DEBUG=true || DEBUG=false
+
 python3 ./scripts/install.py --verbose "${DEBUG}" --configure --defaults --non-interactive --export-malcolm-config-file "${SETTINGS_FILE}"
 
-( [[ -n "${VERBOSE}" ]] && [[ "${VERBOSE}" != "false" ]] && [[ "${VERBOSE}" != "0" ]] ) && DEBUG=true || DEBUG=false
 [[ "${RUNTIME}" == "kubernetes" ]] && ORCH_MODE=KUBERNETES || ORCH_MODE=DOCKER_COMPOSE
 ( [[ "${ZEEK_INTEL_ON_STARTUP:-false}" == "true" ]] || [[ -n "${ZEEK_INTEL_CRON_EXPRESSION}" ]] ) && ZEEK_INTEL=true || ZEEK_INTEL=false
 ( [[ -z "${OPENSEARCH_PATH}" ]] || [[ -z "${OPENSEARCH_SNAPSHOT_PATH}" ]] || [[ -z "${FILESCAN_PATH}" ]] || [[ -z "${PCAP_PATH}" ]] || [[ -z "${SURICATA_PATH}" ]] || [[ -z "${ZEEK_PATH}" ]] ) && \
@@ -204,11 +208,12 @@ tee "${JQ_FILE}" >/dev/null <<EOF
     | .configuration.autoArkime = ${AUTO_ARKIME:-true}
     | .configuration.autoFreq = ${AUTO_FREQ:-true}
     | .configuration.autoOui = ${AUTO_OUI:-true}
+    | .configuration.autoZeekCommunityID = ${AUTO_COMMUNITY_ID:-true}
     | .configuration.autoSuricata = ${AUTO_SURICATA:-true}
     | .configuration.autoZeek = ${AUTO_ZEEK:-true}
-    | .configuration.captureLiveNetworkTraffic = ${CAPTURE_LIVE:-false}
+    | .configuration.captureLiveNetworkTraffic = ${CAPTURE_LIVE}
     | .configuration.captureStats = ${CAPTURE_STATS}
-    | .configuration.containerNetworkName = "${NETWORK_NAME:-}"
+    | .configuration.containerNetworkName = "${NETWORK_NAME}"
     | .configuration.dashboardsDarkMode = ${DARK_MODE:-true}
     | .configuration.dashboardsUrl = "${DASHBOARDS_URL:-http://dashboards:5601/dashboards}"
     | .configuration.dockerOrchestrationMode = "${ORCH_MODE}"
@@ -218,7 +223,12 @@ tee "${JQ_FILE}" >/dev/null <<EOF
     | .configuration.exposeSFTP = ${SFTP_EXPOSE:-false}
     | .configuration.extractedFileMaxPercentThreshold = ${EXTRACTED_FILE_TOTAL_DISK_USAGE_PERCENT_THRESHOLD:-100}
     | .configuration.extractedFileMaxSizeThreshold = "${EXTRACTED_FILE_MAX_SIZE_THRESHOLD:-1T}"
-    | .configuration.extraTags = "${EXTRA_TAGS:-}"
+    | .configuration.extraTags = (
+        "${EXTRA_TAGS:-}"
+        | split(",")
+        | map(gsub("^[[:space:]]+|[[:space:]]+$"; ""))
+        | map(select(length > 0))
+      )
     | .configuration.filebeatTcpDefaults = ${FILEBEAT_TCP_EXPOSE:-false}
     | .configuration.fileCarveHttpServeEncryptKey = "${EXTRACTED_FILE_SERVER_PASSWORD:-infected}"
     | .configuration.fileCarveHttpServer = ${EXTRACTED_FILE_SERVER:-true}
@@ -315,16 +325,16 @@ tee "${JQ_FILE}" >/dev/null <<EOF
     | .configuration.zeekIntelCronExpression = "${ZEEK_INTEL_CRON_EXPRESSION}"
     | .configuration.zeekIntelFeedSince = "${ZEEK_INTEL_FEED_SINCE:-24 hours ago}"
     | .configuration.zeekIntelItemExpiration = "${ZEEK_INTEL_ITEM_EXPIRATION:-1min}"
-    | .configuration.zeekIntelOnStartup = ${ZEEK_INTEL_ON_STARTUP:-false}
+    | .configuration.zeekIntelOnStartup = ${ZEEK_INTEL_ON_STARTUP}
     | .configuration.zeekLogDir = "${ZEEK_PATH}"
-    | .configuration.zeekPullIntelligenceFeeds = ${ZEEK_INTEL:-false}
-    | .configuration.zeekIntelLive = ${ZEEK_INTEL_LIVE:-false}
-    | .configuration.zeekIntelOffline = ${ZEEK_INTEL_OFFLINE:-false}
+    | .configuration.zeekPullIntelligenceFeeds = ${ZEEK_INTEL}
+    | .configuration.zeekIntelLive = ${ZEEK_INTEL_LIVE}
+    | .configuration.zeekIntelOffline = ${ZEEK_INTEL_OFFLINE}
 EOF
 
 jq -f "${JQ_FILE}" "${SETTINGS_FILE}" | sponge "${SETTINGS_FILE}"
 
-python3 ./scripts/install.py --configure --verbose "${DEBUG}" --configure --non-interactive --import-malcolm-config-file "${SETTINGS_FILE}" --extra "${EXTRA_ARRAY[@]}"
+python3 ./scripts/install.py --verbose "${DEBUG}" --configure --non-interactive --import-malcolm-config-file "${SETTINGS_FILE}" --extra "${EXTRA_ARRAY[@]}"
 rm -f "${SETTINGS_FILE}" "${JQ_FILE}"
 
 if command -v direnv &>/dev/null; then
