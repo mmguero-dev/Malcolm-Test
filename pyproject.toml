@@ -18,13 +18,13 @@ classifiers = [
 ]
 dependencies = [
   'beautifulsoup4==4.15.0',
-  'mmguero>=2.2.4',
+  'mmguero>=2.2.5',
   'elasticsearch-dsl==8.18.0',
   'elasticsearch==8.19.3',
   'opensearch-py==3.2.0',
   'petname==2.9',
   'psutil==7.2.2',
-  'pytest==9.1.1',
+  'pytest==9.2.0',
   'python-magic==0.4.27',
   'requests==2.34.2',
   'stream-unzip==0.0.101',
